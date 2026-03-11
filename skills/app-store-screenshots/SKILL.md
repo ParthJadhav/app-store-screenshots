@@ -425,3 +425,4 @@ async function exportSingle(el, id, index, size) {
 | Page won't load / stuck compiling | Set `turbopack.root: "."` in next.config.ts. Kill zombie node processes on the port. Clear `.next` cache. |
 | Zombie server blocking port | Run `lsof -ti:PORT \| xargs kill -9` before starting new server. |
 | CSS effects missing in export | html2canvas doesn't support `filter`, `backdrop-filter`, `mix-blend-mode`. Use `opacity`, `radial-gradient`, `box-shadow` instead. |
+| Image files have alpha transparency, which app store will reject | Make sure to strip alpha channels from files when generating |
