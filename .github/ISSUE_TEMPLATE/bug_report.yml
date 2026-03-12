@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a reproducible problem with the skill or generated workflow
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please include enough detail for someone else to reproduce it.
+
+  - type: input
+    id: environment
+    attributes:
+      label: Agent and environment
+      description: Which agent/editor/runtime were you using?
+      placeholder: Cursor on macOS, Claude Code on Linux, etc.
+    validations:
+      required: true
+
+  - type: input
+    id: install_method
+    attributes:
+      label: Install method
+      description: How did you install the skill?
+      placeholder: npx skills add ..., manual clone, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Prompt used
+      description: Paste the prompt or request that triggered the issue
+      placeholder: Build App Store screenshots for my app...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Include screenshots, exports, console output, or generated files if relevant
+    validations:
+      required: true

@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest an improvement to the skill, docs, or workflow
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the user problem first, then the proposed solution.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What real workflow or quality gap does this feature address?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should change in the repo or skill behavior?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds or other ideas you considered
+
+  - type: textarea
+    id: extra_context
+    attributes:
+      label: Additional context
+      description: Example prompts, screenshots, references, or prior art
