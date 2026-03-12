@@ -111,6 +111,16 @@ Screenshots are designed at 1320x2868 (largest) and scaled down for smaller size
 - **Layouts vary** — no two adjacent slides share the same phone placement
 - **Style is user-driven** — no hardcoded colors, gradients, or fonts
 
+## Quality Checklist
+
+Before exporting, each slide should pass this quick review:
+
+- the headline communicates one idea in about one second
+- the first slide sells the strongest user benefit
+- adjacent slides do not reuse the same layout
+- decorative elements support the message instead of blocking the UI
+- text, screenshots, and framing still look correct after export sizing
+
 ## Requirements
 
 - Node.js 18+

@@ -401,6 +401,36 @@ el.style.zIndex = "";
 - Set `fontFamily` on the offscreen container.
 - **Numbered filenames**: Prefix exports with zero-padded index so they sort correctly: `01-hero-1320x2868.png`, `02-freshness-1320x2868.png`, etc. Use `String(index + 1).padStart(2, "0")`.
 
+## Step 7: Final QA Gate
+
+Before handing the page back to the user, review every slide against this checklist:
+
+### Message Quality
+
+- **One idea per slide**: if a headline sells two ideas, split it or simplify it
+- **First slide is strongest**: the hero slide should communicate the main benefit immediately
+- **Readable in one second**: if you cannot parse it instantly at arm's length, rewrite it
+
+### Visual Quality
+
+- **No repeated layouts in sequence**: adjacent slides should not feel templated
+- **Decorative elements support the story**: they should add energy without covering the app UI
+- **Visual rhythm exists**: include at least one contrast slide when the set is long enough
+
+### Export Quality
+
+- **No clipped text or assets** after scaling to the selected export size
+- **Screenshots are correctly aligned** inside the phone or iPad frame
+- **Filenames sort correctly** with zero-padded numeric prefixes
+
+### Hand-off Behavior
+
+When you present the finished work:
+
+1. briefly explain the narrative arc across the slides
+2. mention any slides that intentionally use contrast or different layout treatment
+3. call out any assumptions you made about brand tone, copy, or missing assets
+
 ## Common Mistakes
 
 | Mistake | Fix |
