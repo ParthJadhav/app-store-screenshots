@@ -64,6 +64,50 @@ Or just tell Claude Code what you need:
 
 Claude will ask you about your app's screenshots, brand colors, font, features, style direction, and number of slides before building anything.
 
+## Example prompts
+
+These are good starting prompts because they provide product context while still leaving room for the skill to guide the design process.
+
+### Habit tracker
+
+```text
+Build App Store screenshots for my habit tracker.
+The app helps people stay consistent with simple daily routines.
+I want 6 slides, clean/minimal style, warm neutrals, and a calm premium feel.
+```
+
+### Finance app
+
+```text
+Generate App Store screenshots for my personal finance app.
+The app's main strengths are fast expense capture, clear monthly trends, and shared budgets.
+I want a sharp, modern style with high contrast and 7 slides.
+```
+
+### AI productivity tool
+
+```text
+Create exportable App Store screenshots for my AI note-taking app.
+The core value is turning messy voice notes into clean summaries and action items.
+I want bold copy, dark backgrounds, and a polished tech-forward look.
+```
+
+### Wellness app
+
+```text
+Build marketing screenshots for my meditation app.
+The app focuses on sleep, stress relief, and short guided sessions.
+Use a soft, warm, organic style and prioritize emotional outcomes over feature lists.
+```
+
+## Better prompt tips
+
+- say what the app does in one sentence
+- list the top 3-5 features in priority order
+- describe the visual style you want
+- mention how many slides you need
+- provide references if you want the output to match a certain App Store style
+
 ## What gets scaffolded
 
 If starting from an empty folder, the skill creates:

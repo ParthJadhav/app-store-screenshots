@@ -163,12 +163,53 @@ Get all headlines approved before building layouts. Bad copy ruins good design.
 - **Vague aspirational**: "Every item, tracked"
 - **Marketing buzzwords**: "AI-powered tips" (unless it's actually AI)
 
+### Bad-to-Better Headline Examples
+
+Use these patterns to rewrite weak copy before building any layout:
+
+| Weak | Better | Why it wins |
+|------|--------|-------------|
+| Track habits and stay motivated | Keep your streak alive | one idea, faster to parse |
+| Organize tasks with AI summaries and smart sorting | Turn notes into next steps | outcome-first, less jargon |
+| Save recipes with tags, filters, and favorites | Find dinner fast | sells the user benefit, not the UI |
+| Manage budgets and never miss payments | See where money goes | cleaner promise, no dual claim |
+| AI-powered wellness support | Feel calmer tonight | concrete emotional outcome |
+
 ### Copy Process
 
 1. Write 3 options per slide using the three approaches
 2. Read each at arm's length — if you can't parse it in 1 second, it's too complex
 3. Check: does each line have 3-5 words? If not, adjust line breaks
 4. Present options to the user with reasoning for each
+
+### Example Prompt Shapes
+
+If the user gives a weak or underspecified request, reshape it internally into something like:
+
+```text
+Build App Store screenshots for my habit tracker.
+The app helps people stay consistent with simple daily routines.
+I want 6 slides, clean/minimal style, warm neutrals, and a calm premium feel.
+```
+
+```text
+Generate App Store screenshots for my personal finance app.
+The app's main strengths are fast expense capture, clear monthly trends, and shared budgets.
+I want a sharp, modern style with high contrast and 7 slides.
+```
+
+```text
+Create exportable App Store screenshots for my AI note-taking app.
+The core value is turning messy voice notes into clean summaries and action items.
+I want bold copy, dark backgrounds, and a polished tech-forward look.
+```
+
+The pattern is:
+
+1. app category + core outcome
+2. top features in priority order
+3. desired slide count
+4. style direction
 
 ### Reference Apps for Copy Style
 
