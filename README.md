@@ -15,6 +15,7 @@ A skill for AI-powered coding agents (Claude Code, Cursor, Windsurf, etc.) that 
 - Writes compelling copy using proven App Store copywriting patterns
 - Renders screenshots at full resolution with a built-in iPhone mockup
 - Exports PNGs at all 4 Apple-required sizes (6.9", 6.5", 6.3", 6.1")
+- Includes a real Next.js starter template plus a bootstrap script
 
 ## Included assets
 
@@ -64,6 +65,30 @@ Or just tell Claude Code what you need:
 
 Claude will ask you about your app's screenshots, brand colors, font, features, style direction, and number of slides before building anything.
 
+## Included starter template
+
+This repo now includes a runnable Next.js starter in `starter/next-app/`.
+It ships with:
+
+- iPhone / iPad device toggle
+- Apple export size presets
+- Per-slide export and export-all flows
+- Offscreen `html-to-image` export wiring
+- Placeholder assets so the page renders before you add your real screenshots
+
+To copy the starter into another folder:
+
+```bash
+node scripts/bootstrap-template.mjs ../my-screenshot-project
+```
+
+Then inside the generated project:
+
+```bash
+bun install
+bun dev
+```
+
 ## Example prompts
 
 These are good starting prompts because they provide product context while still leaving room for the skill to guide the design process.
@@ -110,15 +135,16 @@ Use a soft, warm, organic style and prioritize emotional outcomes over feature l
 
 ## What gets scaffolded
 
-If starting from an empty folder, the skill creates:
+If starting from an empty folder, the skill can now either copy the included starter template or create the same structure from scratch:
 
 ```
 project/
 ├── public/
 │   ├── mockup.png          # iPhone frame (copied from skill)
-│   ├── app-icon.png        # Your app icon
+│   ├── app-icon.svg        # Placeholder app icon (replace with yours)
 │   └── screenshots/        # Your app screenshots
 ├── src/app/
+│   ├── globals.css         # CSS variables and base styles
 │   ├── layout.tsx          # Font setup
 │   └── page.tsx            # Screenshot generator (single file)
 ├── package.json

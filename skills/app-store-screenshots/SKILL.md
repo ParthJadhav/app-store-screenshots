@@ -56,7 +56,31 @@ Check what's available, use this priority: **bun > pnpm > yarn > npm**
 which bun && echo "use bun" || which pnpm && echo "use pnpm" || which yarn && echo "use yarn" || echo "use npm"
 ```
 
-### Scaffold (if no existing Next.js project)
+### Preferred bootstrap path
+
+If this skill repo is available locally, prefer copying the included starter template instead of generating every file from scratch:
+
+```bash
+node scripts/bootstrap-template.mjs ./app-store-assets
+```
+
+That starter already includes:
+- a ready-to-run `page.tsx`
+- iPhone / iPad device toggle
+- built-in export buttons
+- placeholder icon + screenshot states
+- `globals.css` with CSS variables
+
+After bootstrapping:
+
+```bash
+cd app-store-assets
+bun install
+```
+
+Then replace the placeholder copy/screenshots and customize the layouts.
+
+### Scaffold (if no existing Next.js project and the starter is unavailable)
 
 ```bash
 # With bun:
@@ -86,7 +110,7 @@ The skill includes a pre-measured iPhone mockup at `mockup.png` (co-located with
 project/
 ├── public/
 │   ├── mockup.png              # iPhone frame (included with skill)
-│   ├── app-icon.png            # User's app icon
+│   ├── app-icon.svg            # Placeholder app icon (replace with user's icon)
 │   ├── screenshots/            # iPhone app screenshots
 │   │   ├── home.png
 │   │   ├── feature-1.png
@@ -96,6 +120,7 @@ project/
 │       ├── feature-1.png
 │       └── ...
 ├── src/app/
+│   ├── globals.css             # CSS variables + base styles
 │   ├── layout.tsx              # Font setup
 │   └── page.tsx                # The screenshot generator (single file)
 └── package.json
