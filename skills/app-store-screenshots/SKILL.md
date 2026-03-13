@@ -31,8 +31,9 @@ Before writing ANY code, ask the user all of these. Do not proceed until you hav
 
 8. **iPad screenshots** — "Do you also have iPad screenshots? If so, we'll generate iPad App Store screenshots too (recommended for universal apps)."
 9. **Component assets** — "Do you have any UI element PNGs (cards, widgets, etc.) you want as floating decorations? If not, that's fine — we'll skip them."
-10. **Localized screenshots** — "Do you want screenshots in multiple languages? This helps your listing rank in regional App Stores even if your app is English-only. If yes: which languages? (e.g. en, de, es, pt, ja)"
-11. **Additional instructions** — "Any specific requirements, constraints, or preferences?"
+10. **Localized screenshots** — "Do you want screenshots in multiple languages? This helps your listing rank in regional App Stores even if your app is English-only. If yes: which languages? (e.g. en, de, es, pt, ja, ar, he)"
+11. **Theme preset system** — "Do you want one art direction, or reusable visual themes (for example: clean-light, dark-bold, warm-editorial) so you can swap screenshot looks quickly?"
+12. **Additional instructions** — "Any specific requirements, constraints, or preferences?"
 
 ### Derived from answers (do NOT ask — decide yourself)
 
@@ -42,6 +43,8 @@ Based on the user's style direction, brand colors, and app aesthetic, decide:
 - **Dark vs light slides**: how many of each, which features suit dark treatment
 - **Typography treatment**: weight, tracking, line height — match the brand personality
 - **Color palette**: derive text colors, secondary colors, shadow tints from the brand colors
+- **Theme preset names**: turn vague style requests into reusable theme ids the user can switch between
+- **RTL behavior**: if any locale is RTL (`ar`, `he`, `fa`, `ur`), mirror layout intentionally instead of just translating the text
 
 **IMPORTANT:** If the user gives additional instructions at any point during the process, follow them. User instructions always override skill defaults.
 
@@ -116,6 +119,15 @@ project/
     └── {locale}/
 ```
 
+If iPad screenshots are localized too, mirror the same locale structure:
+
+```
+└── screenshots-ipad/
+    ├── en/
+    ├── de/
+    └── {locale}/
+```
+
 **The entire generator is a single `page.tsx` file.** No routing, no extra layouts, no API routes.
 
 ### Multi-language: Locale Tabs
@@ -140,6 +152,61 @@ const base = `/screenshots/${locale}`;
 
 // In every slide — unchanged between single and multi-language:
 <Phone src={`${base}/home.png`} alt="Home" />
+```
+
+### Theme Presets + Locale Metadata
+
+Add a small config layer so the user can switch theme and locale without rewriting slide components:
+
+```tsx
+const LOCALES = ["en", "de", "ar"] as const;
+type Locale = typeof LOCALES[number];
+
+const RTL_LOCALES = new Set<Locale>(["ar"]);
+
+const THEMES = {
+  "clean-light": {
+    bg: "#F6F1EA",
+    fg: "#171717",
+    accent: "#5B7CFA",
+    muted: "#6B7280",
+  },
+  "dark-bold": {
+    bg: "#0B1020",
+    fg: "#F8FAFC",
+    accent: "#8B5CF6",
+    muted: "#94A3B8",
+  },
+  "warm-editorial": {
+    bg: "#F7E8DA",
+    fg: "#2B1D17",
+    accent: "#D97706",
+    muted: "#7C5A47",
+  },
+} as const;
+
+type ThemeId = keyof typeof THEMES;
+
+const COPY_BY_LOCALE = {
+  en: { hero: "Build better habits" },
+  de: { hero: "Baue bessere Gewohnheiten auf" },
+  ar: { hero: "ابنِ عادات أفضل" },
+} satisfies Record<Locale, { hero: string }>;
+
+const [themeId, setThemeId] = useState<ThemeId>("clean-light");
+const [locale, setLocale] = useState<Locale>("en");
+
+const theme = THEMES[themeId];
+const copy = COPY_BY_LOCALE[locale];
+const isRtl = RTL_LOCALES.has(locale);
+```
+
+Use theme tokens everywhere instead of hardcoding colors. For RTL locales, set `dir={isRtl ? "rtl" : "ltr"}` on the screenshot canvas and mirror asymmetric layouts intentionally.
+
+Support query params for automation:
+
+```tsx
+// ?locale=de&theme=dark-bold&device=ipad
 ```
 
 ### Font Setup
@@ -249,6 +316,13 @@ The pattern is:
 3. desired slide count
 4. style direction
 
+### Localization Rules
+
+- Do not literally translate headlines if the result becomes long or awkward.
+- Re-write copy for the target market while keeping the same selling idea.
+- Re-check line breaks per locale; German, French, and Portuguese often need shorter claims.
+- For RTL languages, also reverse badge alignment, supporting decorations, and phone offsets when the composition depends on left/right weight.
+
 ### Reference Apps for Copy Style
 
 - **Raycast** — specific, descriptive, one concrete value per slide
@@ -262,6 +336,7 @@ The pattern is:
 ```
 page.tsx
 ├── Constants (IPHONE_W/H, IPAD_W/H, SIZES, design tokens)
+├── LOCALES / RTL_LOCALES / THEMES / COPY_BY_LOCALE
 ├── Phone component (mockup PNG with screen overlay)
 ├── IPad component (CSS-only frame with screen overlay)
 ├── Caption component (label + headline, accepts canvasW for scaling)
@@ -270,7 +345,7 @@ page.tsx
 ├── iPadSlide1..N components (same designs, adjusted for iPad proportions)
 ├── IPHONE_SCREENSHOTS / IPAD_SCREENSHOTS arrays (registries)
 ├── ScreenshotPreview (ResizeObserver scaling + hover export)
-└── ScreenshotsPage (grid + device toggle + size dropdown + export logic)
+└── ScreenshotsPage (grid + locale tabs + theme tabs + device toggle + export logic)
 ```
 
 ### Export Sizes (Apple Required, portrait)
@@ -304,6 +379,15 @@ Design iPad slides at 2064x2752 and scale down. iPad screenshots are optional bu
 #### Device Toggle
 
 When supporting both devices, add a toggle (iPhone / iPad) in the toolbar next to the size dropdown. The size dropdown should switch between iPhone and iPad sizes based on the selected device. Support a `?device=ipad` URL parameter for headless/automated capture workflows.
+
+#### Theme + Locale Toggles
+
+Place locale and theme selectors in the same toolbar as device + size. This turns the generator into a small control panel instead of a one-off page.
+
+- `locale` switches screenshot folders and copy dictionaries
+- `theme` switches design tokens only
+- `device` switches iPhone/iPad slide registries
+- `size` switches export resolution only
 
 ### Rendering Strategy
 
@@ -470,6 +554,40 @@ el.style.opacity = "";
 el.style.zIndex = "";
 ```
 
+### Export Matrix
+
+If the project supports multiple locales and themes, add bulk export helpers so the user can export everything in one pass:
+
+```typescript
+const jobs = LOCALES.flatMap(locale =>
+  ACTIVE_THEME_IDS.flatMap(themeId =>
+    ACTIVE_DEVICES.flatMap(device =>
+      getSlidesFor(device).map((slide, index) => ({
+        locale,
+        themeId,
+        device,
+        index,
+        slide,
+      })),
+    ),
+  ),
+);
+```
+
+Name files so they sort cleanly and preserve metadata:
+
+```text
+01-hero-en-clean-light-iphone-1320x2868.png
+01-hero-ar-dark-bold-ipad-2064x2752.png
+```
+
+At minimum, support:
+
+1. export current slide
+2. export all slides for current locale/device/theme
+3. export all locales for current theme
+4. export full matrix when the user explicitly asks for it
+
 ### Key Rules
 
 - **Double-call trick**: First `toPng()` loads fonts/images lazily. Second produces clean output. Without this, exports are blank.
@@ -501,6 +619,9 @@ Before handing the page back to the user, review every slide against this checkl
 - **No clipped text or assets** after scaling to the selected export size
 - **Screenshots are correctly aligned** inside the phone or iPad frame
 - **Filenames sort correctly** with zero-padded numeric prefixes
+- **Theme tokens are applied consistently** across all slides in the same preset
+- **Localized copy still fits** after translation, especially on long-word languages
+- **RTL slides feel designed, not just flipped**
 
 ### Hand-off Behavior
 

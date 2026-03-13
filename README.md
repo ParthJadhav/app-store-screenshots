@@ -15,6 +15,9 @@ A skill for AI-powered coding agents (Claude Code, Cursor, Windsurf, etc.) that 
 - Writes compelling copy using proven App Store copywriting patterns
 - Renders screenshots at full resolution with a built-in iPhone mockup
 - Exports PNGs at all 4 Apple-required sizes (6.9", 6.5", 6.3", 6.1")
+- Supports locale-based screenshot sets and localized copy
+- Supports reusable theme presets so you can swap art direction quickly
+- Supports RTL-aware layouts and bulk export across locale/device/theme combinations
 
 ## Included assets
 
@@ -100,12 +103,23 @@ The app focuses on sleep, stress relief, and short guided sessions.
 Use a soft, warm, organic style and prioritize emotional outcomes over feature lists.
 ```
 
+### Multi-language / multi-theme
+
+```text
+Build App Store screenshots for my language learning app.
+I need English, German, and Arabic screenshot sets.
+Use two reusable themes: clean-light and dark-bold.
+Make sure Arabic slides feel RTL-native, not just translated.
+```
+
 ## Better prompt tips
 
 - say what the app does in one sentence
 - list the top 3-5 features in priority order
 - describe the visual style you want
 - mention how many slides you need
+- mention if you need multiple languages or RTL locales
+- mention if you want one art direction or reusable theme presets
 - provide references if you want the output to match a certain App Store style
 
 ## What gets scaffolded
@@ -117,7 +131,8 @@ project/
 ├── public/
 │   ├── mockup.png          # iPhone frame (copied from skill)
 │   ├── app-icon.png        # Your app icon
-│   └── screenshots/        # Your app screenshots
+│   ├── screenshots/        # Your app screenshots (locale folders optional)
+│   └── screenshots-ipad/   # Optional iPad screenshots (locale folders optional)
 ├── src/app/
 │   ├── layout.tsx          # Font setup
 │   └── page.tsx            # Screenshot generator (single file)
@@ -126,6 +141,13 @@ project/
 ```
 
 The entire generator is a **single `page.tsx` file**. Run the dev server, open the browser, click any screenshot to export it as a PNG.
+
+The latest version of the skill also guides the agent to generate:
+
+- locale tabs and locale-specific screenshot folders
+- reusable theme presets backed by design tokens
+- RTL-aware layouts for languages like Arabic and Hebrew
+- bulk export flows for locale/device/theme combinations
 
 ## Export sizes
 
@@ -137,6 +159,51 @@ The entire generator is a **single `page.tsx` file**. Run the dev server, open t
 | 6.1" | 1125 x 2436 |
 
 Screenshots are designed at 1320x2868 (largest) and scaled down for smaller sizes.
+
+## Advanced capabilities
+
+### Multi-language screenshots
+
+The skill can generate screenshot systems for multiple locales by nesting images under locale folders such as:
+
+```text
+public/screenshots/en/home.png
+public/screenshots/de/home.png
+public/screenshots/ar/home.png
+```
+
+The generated page keeps slide structure the same and swaps only the locale base path and copy dictionary.
+
+### Theme presets
+
+Instead of hardcoding one art direction, the skill now encourages a token-driven preset system, for example:
+
+```ts
+const THEMES = {
+  "clean-light": { bg: "#F6F1EA", fg: "#171717", accent: "#5B7CFA" },
+  "dark-bold": { bg: "#0B1020", fg: "#F8FAFC", accent: "#8B5CF6" },
+  "warm-editorial": { bg: "#F7E8DA", fg: "#2B1D17", accent: "#D97706" },
+} as const;
+```
+
+This lets you reuse the same slide system while testing different visual directions fast.
+
+### RTL-aware design
+
+For RTL locales such as Arabic and Hebrew, the skill now tells the agent to:
+
+- set `dir="rtl"` on the screenshot canvas
+- rewrite line breaks for the target language
+- mirror asymmetric layouts intentionally
+- keep the composition feeling native instead of mechanically flipped
+
+### Bulk export matrix
+
+The generator is now expected to support exporting not only the current slide, but also:
+
+- all slides for the current locale/device/theme
+- all locales for the current theme
+- full locale + device + theme matrices when needed
 
 ## Tech stack
 
