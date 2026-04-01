@@ -271,11 +271,53 @@ Get all headlines approved before building layouts. Bad copy ruins good design.
 | Save recipes with tags and favorites | Find dinner fast | sells the benefit, not the UI |
 | Manage budgets and never miss payments | See where money goes | cleaner promise, no dual claim |
 
+### Copy Process
+
+1. Write 3 options per slide using the three approaches
+2. Read each at arm's length — if you can't parse it in 1 second, it's too complex
+3. Check: does each line have 3-5 words? If not, adjust line breaks
+4. Present options to the user with reasoning for each
+
+### Example Prompt Shapes
+
+If the user gives a weak or underspecified request, reshape it internally into something like:
+
+```text
+Build App Store screenshots for my habit tracker.
+The app helps people stay consistent with simple daily routines.
+I want 6 slides, clean/minimal style, warm neutrals, and a calm premium feel.
+```
+
+```text
+Generate App Store screenshots for my personal finance app.
+The app's main strengths are fast expense capture, clear monthly trends, and shared budgets.
+I want a sharp, modern style with high contrast and 7 slides.
+```
+
+```text
+Create exportable App Store screenshots for my AI note-taking app.
+The core value is turning messy voice notes into clean summaries and action items.
+I want bold copy, dark backgrounds, and a polished tech-forward look.
+```
+
+The pattern is:
+
+1. app category + core outcome
+2. top features in priority order
+3. desired slide count
+4. style direction
+
 ### Localization Rules
 
 - Do not literally translate headlines if the result becomes long or awkward — re-write for the target market.
 - Re-check line breaks per locale; German, French, and Portuguese often need shorter claims.
 - For RTL languages (`ar`, `he`, `fa`, `ur`), set `dir="rtl"` on the canvas and mirror asymmetric layouts intentionally.
+
+### Reference Apps for Copy Style
+
+- **Raycast** — specific, descriptive, one concrete value per slide
+- **Turf** — ultra-simple action verbs, conversational
+- **Mela / Notion** — warm, minimal, elegant
 
 ## Step 5: Build the Page
 
@@ -980,6 +1022,17 @@ async function exportAll() {
 - **Screenshots correctly aligned** inside every device frame
 - **Filenames sort correctly** with zero-padded numeric prefixes
 - **Feature Graphic exports** cleanly at 1024×500 (no device frame)
+- **Theme tokens are applied consistently** across all slides in the same preset
+- **Localized copy still fits** after translation, especially on long-word languages
+- **RTL slides feel designed, not just flipped**
+
+### Hand-off Behavior
+
+When you present the finished work:
+
+1. briefly explain the narrative arc across the slides
+2. mention any slides that intentionally use contrast or different layout treatment
+3. call out any assumptions you made about brand tone, copy, or missing assets
 
 ## Common Mistakes
 
