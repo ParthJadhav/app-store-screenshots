@@ -3,9 +3,9 @@
 ### NOTE: MAKE SURE TO USE 6.1 INCH simulator to capture starting screenshots
 this will save u from adjusting the images later
 
-# App Store Screenshots Generator
+# App Store & Google Play Screenshots Generator
 
-A skill for AI-powered coding agents (Claude Code, Cursor, Windsurf, etc.) that generates production-ready App Store screenshots for iOS apps. It scaffolds a Next.js project, designs advertisement-style screenshots, and exports them at all required Apple resolutions.
+A skill for AI-powered coding agents (Claude Code, Cursor, Windsurf, etc.) that generates production-ready **App Store and Google Play** screenshots for iOS and Android apps. It scaffolds a Next.js project, designs advertisement-style screenshots, and exports them at all required Apple and Google resolutions.
 #### Screenshots & App approved by Apple - https://apps.apple.com/us/app/bloom-coffee-shelf-recipe/id6759914524
 ![Example output — Bloom coffee tracking app](example.png)
 
@@ -14,9 +14,10 @@ A skill for AI-powered coding agents (Claude Code, Cursor, Windsurf, etc.) that 
 - Asks you about your app's brand, features, and style preferences
 - Scaffolds a minimal Next.js project (or works within an existing one)
 - Designs each screenshot as an **advertisement** — not a UI showcase
-- Writes compelling copy using proven App Store copywriting patterns
-- Renders screenshots at full resolution with a built-in iPhone mockup
-- Exports PNGs at all 4 Apple-required sizes (6.9", 6.5", 6.3", 6.1")
+- Writes compelling copy using proven App Store / Play Store copywriting patterns
+- Renders screenshots at full resolution with a built-in iPhone mockup and CSS-based Android device frames
+- Exports PNGs at all required sizes for **both stores**
+- Supports **Android Phone, 7" Tablet, 10" Tablet** (portrait + landscape) and **Feature Graphic** (1024×500)
 - Supports locale-based screenshot sets and localized copy
 - Supports reusable theme presets so you can swap art direction quickly
 - Supports RTL-aware layouts and bulk export across locale/device/theme combinations
@@ -24,6 +25,7 @@ A skill for AI-powered coding agents (Claude Code, Cursor, Windsurf, etc.) that 
 ## Included assets
 
 - `mockup.png` — Pre-measured iPhone frame with transparent screen area
+- Android device frames are rendered with **CSS only** — no additional mockup PNGs needed
 
 ## Install
 
@@ -57,14 +59,14 @@ git clone https://github.com/ParthJadhav/app-store-screenshots ~/.claude/skills/
 
 Once installed, the skill triggers automatically when you ask Claude Code to:
 
-- Build App Store screenshots
-- Generate marketing screenshots for an iOS app
-- Create exportable screenshot assets
+- Build App Store or Google Play screenshots
+- Generate marketing screenshots for an iOS or Android app
+- Create exportable screenshot assets for both stores
 
 Or just tell Claude Code what you need:
 
 ```
-> Build App Store screenshots for my app
+> Build App Store and Google Play screenshots for my app
 ```
 
 Claude will ask you about your app's screenshots, brand colors, font, features, style direction, and number of slides before building anything.
@@ -133,14 +135,17 @@ project/
 ├── public/
 │   ├── mockup.png          # iPhone frame (copied from skill)
 │   ├── app-icon.png        # Your app icon
-│   ├── screenshots/        # Your app screenshots (locale folders optional)
-│   └── screenshots-ipad/   # Optional iPad screenshots (locale folders optional)
+│   ├── screenshots/        # iOS screenshots (locale folders optional)
+│   │   └── android/        # Android screenshots (when targeting both)
+│   └── screenshots-ipad/   # Optional iPad screenshots
 ├── src/app/
 │   ├── layout.tsx          # Font setup
 │   └── page.tsx            # Screenshot generator (single file)
 ├── package.json
 └── ...
 ```
+
+When targeting both stores, the skill uses a platform-based folder structure to keep iOS and Android screenshots separated.
 
 The entire generator is a **single `page.tsx` file**. Run the dev server, open the browser, click any screenshot to export it as a PNG.
 
@@ -153,6 +158,8 @@ The latest version of the skill also guides the agent to generate:
 
 ## Export sizes
 
+### Apple App Store
+
 | Display | Resolution |
 |---------|-----------|
 | 6.9" | 1320 x 2868 |
@@ -160,7 +167,18 @@ The latest version of the skill also guides the agent to generate:
 | 6.3" | 1206 x 2622 |
 | 6.1" | 1125 x 2436 |
 
-Screenshots are designed at 1320x2868 (largest) and scaled down for smaller sizes.
+### Google Play Store
+
+| Device | Resolution |
+|--------|-----------|
+| Phone (portrait) | 1080 x 1920 |
+| 7" Tablet (portrait) | 1200 x 1920 |
+| 7" Tablet (landscape) | 1920 x 1200 |
+| 10" Tablet (portrait) | 1600 x 2560 |
+| 10" Tablet (landscape) | 2560 x 1600 |
+| Feature Graphic | 1024 x 500 |
+
+Screenshots are designed at the largest size per platform and scaled down for smaller sizes. Android device frames are CSS-rendered.
 
 ## Advanced capabilities
 
