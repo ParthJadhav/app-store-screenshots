@@ -91,9 +91,13 @@ npx create-next-app@latest . --typescript --tailwind --app --src-dir --no-eslint
 npm install html-to-image
 ```
 
-### Copy the Phone Mockup
+### Copy the Phone Mockups
 
-The skill includes a pre-measured iPhone mockup at `mockup.png` (co-located with this SKILL.md). Copy it to the project's `public/` directory. All other device frames (Android Phone, Android Tablets, iPad) are rendered with CSS — no additional mockup PNGs needed.
+The skill includes pre-measured device mockups co-located with this SKILL.md:
+- `mockup.png` — iPhone frame (1022×2082px)
+- `android-mockup.png` — Google Pixel 8 frame (978×2100px, sourced from [MockUPhone](https://mockuphone.com/) under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/))
+
+Copy both to the project's `public/` directory. Android Tablets and iPad frames are still rendered with CSS — no additional mockup PNGs needed for those.
 
 ### File Structure
 
@@ -331,7 +335,7 @@ page.tsx
 ├── Image preload cache (preloadAllImages + img() helper)
 ├── Device frame components:
 │   ├── Phone          — iPhone (mockup.png + pre-measured overlay)
-│   ├── AndroidPhone   — Android phone (CSS-only)
+│   ├── AndroidPhone   — Android phone (android-mockup.png + pre-measured overlay)
 │   ├── AndroidTabletP — Android tablet portrait (CSS-only)
 │   ├── AndroidTabletL — Android tablet landscape (CSS-only)
 │   └── IPad           — iPad (CSS-only)
@@ -413,6 +417,7 @@ type Orientation = "portrait" | "landscape";
 
 ```typescript
 const MK_RATIO   = 1022 / 2082; // iPhone mockup (width/height)
+const AMK_RATIO  = 978  / 2100; // Android Pixel 8 mockup (width/height)
 const TAB_P_RATIO = 0.667;       // tablet portrait frame (5:8 screen)
 const TAB_L_RATIO = 1.5;         // tablet landscape frame (8:5 screen)
 const IPAD_RATIO  = 0.770;       // iPad frame (770/1000)
@@ -494,34 +499,31 @@ function Phone({ src, alt, style }: { src: string; alt: string; style?: React.CS
 }
 ```
 
-#### Android Phone (CSS-only)
+#### Android Phone (PNG mockup — Pixel 8)
+
+The included `android-mockup.png` is a Google Pixel 8 frame from [MockUPhone](https://mockuphone.com/) (CC BY 3.0). Pre-measured screen coordinates from MockUPhone's device data: `[[33,49],[935,49],[935,2051],[33,2051]]`.
+
+```typescript
+const AMK_W = 978;  const AMK_H = 2100;
+const ASC_L  = (33  / AMK_W) * 100;  // screen left %
+const ASC_T  = (49  / AMK_H) * 100;  // screen top %
+const ASC_W  = (902 / AMK_W) * 100;  // screen width %
+const ASC_H  = (2002/ AMK_H) * 100;  // screen height %
+const ASC_RX = (40  / 902)   * 100;  // border-radius x %
+const ASC_RY = (40  / 2002)  * 100;  // border-radius y %
+```
 
 ```tsx
 function AndroidPhone({ src, alt, style }: { src: string; alt: string; style?: React.CSSProperties }) {
   return (
-    <div style={{ position: "relative", aspectRatio: "9/19.5", ...style }}>
+    <div style={{ position: "relative", aspectRatio: `${AMK_W}/${AMK_H}`, ...style }}>
+      <img src={img("/android-mockup.png")} alt="" style={{ display: "block", width: "100%", height: "100%" }} draggable={false} />
       <div style={{
-        width: "100%", height: "100%",
-        borderRadius: "8% / 4%",
-        background: "linear-gradient(160deg, #2a2a2e 0%, #18181b 100%)",
-        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 8px 40px rgba(0,0,0,0.55)",
-        position: "relative", overflow: "hidden",
+        position: "absolute", zIndex: 10, overflow: "hidden",
+        left: `${ASC_L}%`, top: `${ASC_T}%`, width: `${ASC_W}%`, height: `${ASC_H}%`,
+        borderRadius: `${ASC_RX}% / ${ASC_RY}%`,
       }}>
-        {/* Punch-hole camera */}
-        <div style={{
-          position: "absolute", top: "1.5%", left: "50%",
-          transform: "translateX(-50%)", width: "3%", height: "1.4%",
-          borderRadius: "50%", background: "#0d0d0f",
-          border: "1px solid rgba(255,255,255,0.06)", zIndex: 20,
-        }} />
-        {/* Screen */}
-        <div style={{
-          position: "absolute", left: "3.5%", top: "2%",
-          width: "93%", height: "96%",
-          borderRadius: "5.5% / 2.6%", overflow: "hidden", background: "#000",
-        }}>
-          <img src={src} alt={alt} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} draggable={false} />
-        </div>
+        <img src={src} alt={alt} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} draggable={false} />
       </div>
     </div>
   );
@@ -697,7 +699,7 @@ const mkTabL = (base: string) => [
 ];
 
 const IPHONE_SLIDES      = [makeSlide1(Phone, phoneW, "screenshots/apple/iphone", MK_RATIO), ...];
-const ANDROID_SLIDES     = [makeSlide1(AndroidPhone, phoneW, "screenshots/android/phone", MK_RATIO), ...];
+const ANDROID_SLIDES     = [makeSlide1(AndroidPhone, phoneW, "screenshots/android/phone", AMK_RATIO), ...];
 const ANDROID_7P_SLIDES  = mkTabP("screenshots/android/tablet-7/portrait");
 const ANDROID_7L_SLIDES  = mkTabL("screenshots/android/tablet-7/landscape");
 const ANDROID_10P_SLIDES = mkTabP("screenshots/android/tablet-10/portrait");
@@ -916,6 +918,7 @@ Dark/contrast background with app icon, headline ("And so much more."), and feat
 ```typescript
 const IMAGE_PATHS = [
   "/mockup.png",
+  "/android-mockup.png",
   "/app-icon.png",
   "/screenshots/apple/iphone/en/home.png",
   // ... all images used in any slide across all devices/locales
