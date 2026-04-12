@@ -24,6 +24,7 @@ A skill for AI-powered coding agents (Claude Code, Cursor, Windsurf, etc.) that 
 ## Included assets
 
 - `mockup.png` — Pre-measured iPhone frame with transparent screen area
+- `android-mockup.png` — Pre-measured Google Pixel 8 frame ([MockUPhone](https://mockuphone.com/), [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/))
 
 ## Install
 
@@ -249,6 +250,10 @@ Contributions are welcome, especially around:
 - cross-agent compatibility
 
 If you want to contribute, start with `CONTRIBUTING.md`. Bug reports and feature requests also have issue templates now to make reproduction and review easier.
+
+## Attribution
+
+The Android phone mockup (`android-mockup.png`) is sourced from [MockUPhone](https://mockuphone.com/) and licensed under [Creative Commons Attribution 3.0 Unported (CC BY 3.0)](https://creativecommons.org/licenses/by/3.0/).
 
 ## License
 
