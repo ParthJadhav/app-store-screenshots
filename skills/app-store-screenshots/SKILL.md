@@ -321,6 +321,85 @@ The pattern is:
 
 ## Step 5: Build the Page
 
+### Constants — copy this block verbatim
+
+Paste the block below at the top of `page.tsx`, **before any component code**. Do not derive, estimate, or retype these values — errors here silently produce screenshots at wrong resolutions or with misaligned device frames, and Apple/Google may reject the output.
+
+```typescript
+// ─── Canvas dimensions ────────────────────────────────────────────────────────
+// Design at the largest required size per category; export step scales down.
+
+// Apple
+const W      = 1320;  const H      = 2868; // iPhone 6.9" (largest required)
+const IPAD_W = 2064;  const IPAD_H = 2752; // iPad 13"   (largest required)
+
+// Android phone
+const AW     = 1080;  const AH     = 1920;
+
+// Android tablet — portrait
+const AT7P_W  = 1200; const AT7P_H  = 1920; // 7"  portrait
+const AT10P_W = 1600; const AT10P_H = 2560; // 10" portrait
+
+// Android tablet — landscape
+const AT7L_W  = 1920; const AT7L_H  = 1200; // 7"  landscape
+const AT10L_W = 2560; const AT10L_H = 1600; // 10" landscape
+
+// Feature Graphic (Google Play banner)
+const FGW = 1024;     const FGH = 500;
+
+// ─── Export sizes ─────────────────────────────────────────────────────────────
+
+const IPHONE_SIZES = [
+  { label: '6.9"', w: 1320, h: 2868 },
+  { label: '6.5"', w: 1284, h: 2778 },
+  { label: '6.3"', w: 1206, h: 2622 },
+  { label: '6.1"', w: 1125, h: 2436 },
+] as const;
+
+const IPAD_SIZES = [
+  { label: '13" iPad',       w: 2064, h: 2752 },
+  { label: '12.9" iPad Pro', w: 2048, h: 2732 },
+] as const;
+
+const ANDROID_SIZES     = [{ label: "Phone",          w: 1080, h: 1920 }] as const;
+const ANDROID_7P_SIZES  = [{ label: '7" Portrait',    w: 1200, h: 1920 }] as const;
+const ANDROID_7L_SIZES  = [{ label: '7" Landscape',   w: 1920, h: 1200 }] as const;
+const ANDROID_10P_SIZES = [{ label: '10" Portrait',   w: 1600, h: 2560 }] as const;
+const ANDROID_10L_SIZES = [{ label: '10" Landscape',  w: 2560, h: 1600 }] as const;
+const FG_SIZES          = [{ label: "Feature Graphic",w: 1024, h:  500 }] as const;
+
+// ─── iPhone mockup measurements ───────────────────────────────────────────────
+// Derived from the physical pixel layout of mockup.png.
+
+const MK_W  = 1022;   const MK_H  = 2082;
+const SC_L  = (52   / MK_W) * 100; // screen left %
+const SC_T  = (46   / MK_H) * 100; // screen top %
+const SC_W  = (918  / MK_W) * 100; // screen width %
+const SC_H  = (1990 / MK_H) * 100; // screen height %
+const SC_RX = (126  / 918)  * 100; // border-radius x %
+const SC_RY = (126  / 1990) * 100; // border-radius y %
+
+// ─── Frame aspect ratios ──────────────────────────────────────────────────────
+
+const MK_RATIO    = MK_W / MK_H; // iPhone mockup  ≈ 0.491
+const TAB_P_RATIO = 0.667;        // tablet portrait (5:8)
+const TAB_L_RATIO = 1.5;          // tablet landscape (8:5)
+const IPAD_RATIO  = 0.770;        // iPad (770/1000)
+
+// ─── Width formula functions ──────────────────────────────────────────────────
+// Return a fraction (0–1) of canvas width. Usage: width: `${phoneW(cW,cH)*100}%`
+
+type WidthFn = (cW: number, cH: number) => number;
+
+function phoneW  (cW: number, cH: number, clamp = 0.84) { return Math.min(clamp, 0.72 * (cH / cW) * MK_RATIO);    }
+function phoneW2 (cW: number, cH: number)               { return phoneW(cW, cH, 0.66);                             }
+function tabletPW(cW: number, cH: number, clamp = 0.80) { return Math.min(clamp, 0.72 * (cH / cW) * TAB_P_RATIO); }
+function tabletPW2(cW: number, cH: number)              { return tabletPW(cW, cH, 0.64);                           }
+function tabletLW(cW: number, cH: number, clamp = 0.62) { return Math.min(clamp, 0.75 * (cH / cW) * TAB_L_RATIO); }
+function ipadW   (cW: number, cH: number, clamp = 0.75) { return Math.min(clamp, 0.72 * (cH / cW) * IPAD_RATIO);  }
+function ipadW2  (cW: number, cH: number)               { return ipadW(cW, cH, 0.60);                              }
+```
+
 ### Architecture
 
 ```
@@ -1049,5 +1128,6 @@ When you present the finished work:
 | Some slides missing images | Non-deterministic fetch race — same fix as above |
 | Export button scrolls off toolbar | Split toolbar: scrollable controls left (`flex: 1`), fixed button right (`flex-shrink: 0`) |
 | Page has horizontal scroll | Add `overflowX: "hidden"` on the outermost wrapper div |
-| Screenshots rejected by App Store | Source PNGs have alpha channel — flatten to RGB (composite onto black) |
+| Screenshots rejected by App Store with IMAGE_ALPHA_NOT_ALLOWED | Source PNGs have alpha channel — flatten to RGB before placing in `public/`: `sips --setProperty hasAlpha false *.png` (macOS) or `magick input.png -background white -flatten output.png` (ImageMagick) |
 | Android tablet orientation ignored | Derive `cW/cH/slides` from `device + orientation` combo, not just `device` |
+| Wrong canvas size or misaligned phone frame | Constants were retyped instead of copied — use the verbatim block at the top of Step 5 |
