@@ -393,6 +393,7 @@ export function ScreenshotEditor() {
         height: h,
         pixelRatio: 1,
         cacheBust: false,
+        backgroundColor: "#ffffff",
       });
       return dataUrl;
     } finally {
