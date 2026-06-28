@@ -33,6 +33,12 @@ import {
   toTextElementId,
 } from "@/lib/elements";
 import { pickText, writeLocalized } from "@/lib/locale";
+import {
+  cleanTypography,
+  FONT_SCALE_MAX,
+  FONT_SCALE_MIN,
+  slideFontScales,
+} from "@/lib/typography";
 import type {
   BuiltInElementId,
   Device,
@@ -41,6 +47,7 @@ import type {
   Orientation,
   Slide,
   SlideLayout,
+  SlideTypography,
   TextElement,
 } from "@/lib/types";
 import { ScreenshotPicker } from "./screenshot-picker";
@@ -160,6 +167,8 @@ export function Inspector({
             placeholder={headlinePlaceholder}
           />
         </div>
+
+        <TypographySection slide={slide} isFeatureGraphic={isFeatureGraphic} onChange={onChange} />
 
         {!isFeatureGraphic && !isNoDevice && (
           <div className="space-y-1.5">
@@ -524,7 +533,22 @@ function TextElementPanel({
       </div>
       <div className="grid grid-cols-[1fr_76px] gap-2">
         <div className="space-y-1">
-          <Label className="text-[11px] text-muted-foreground">Size</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-[11px] text-muted-foreground">Size</Label>
+            <span className="text-[11px] tabular-nums text-muted-foreground">
+              {Math.round(element.fontSize || 72)}px
+            </span>
+          </div>
+          <input
+            type="range"
+            min={12}
+            max={400}
+            step={1}
+            value={Math.round(element.fontSize || 72)}
+            onChange={(event) => onTextPatch({ fontSize: Number(event.target.value) || 72 })}
+            className="w-full"
+            aria-label="Text size"
+          />
           <Input
             type="number"
             min={12}
@@ -594,6 +618,98 @@ function LayerButton({
     >
       {children}
     </Button>
+  );
+}
+
+function TypographySection({
+  slide,
+  isFeatureGraphic,
+  onChange,
+}: {
+  slide: Slide;
+  isFeatureGraphic: boolean;
+  onChange: (patch: Partial<Slide>) => void;
+}) {
+  const scales = slideFontScales(slide);
+
+  function patchTypography(patch: Partial<SlideTypography>) {
+    onChange({
+      typography: cleanTypography({ ...slide.typography, ...patch }),
+    });
+  }
+
+  return (
+    <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+      <div>
+        <Label className="text-xs font-semibold">Typography</Label>
+        <p className="text-[11px] text-muted-foreground">
+          Relative to the layout default (100%). Applies to this screen only.
+        </p>
+      </div>
+      {!isFeatureGraphic && (
+        <FontScaleSlider
+          label="Label"
+          value={scales.labelScale}
+          onChange={(value) => patchTypography({ labelScale: value })}
+        />
+      )}
+      <FontScaleSlider
+        label={isFeatureGraphic ? "Tagline" : "Headline"}
+        value={scales.headlineScale}
+        onChange={(value) => patchTypography({ headlineScale: value })}
+      />
+      {isFeatureGraphic && (
+        <FontScaleSlider
+          label="App name"
+          value={scales.appNameScale}
+          onChange={(value) => patchTypography({ appNameScale: value })}
+        />
+      )}
+    </div>
+  );
+}
+
+function FontScaleSlider({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const pct = Math.round(value * 100);
+  const minPct = Math.round(FONT_SCALE_MIN * 100);
+  const maxPct = Math.round(FONT_SCALE_MAX * 100);
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-[11px] text-muted-foreground">{label}</Label>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] tabular-nums text-muted-foreground">{pct}%</span>
+          {pct !== 100 ? (
+            <button
+              type="button"
+              className="text-[10px] text-muted-foreground underline-offset-2 hover:underline"
+              onClick={() => onChange(1)}
+            >
+              Reset
+            </button>
+          ) : null}
+        </div>
+      </div>
+      <input
+        type="range"
+        min={minPct}
+        max={maxPct}
+        step={5}
+        value={pct}
+        onChange={(event) => onChange(Number(event.target.value) / 100)}
+        className="w-full"
+        aria-label={`${label} font size`}
+      />
+    </div>
   );
 }
 

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PROJECT_SCHEMA_VERSION, STORAGE_KEY } from "./constants";
 import { DEFAULT_PROJECT } from "./defaults";
 import { coerceLocalized } from "./locale";
+import { cleanTypography } from "./typography";
 import type { Device, ElementTransform, ProjectState, Slide, TextElement } from "./types";
 
 const HISTORY_LIMIT = 50;
@@ -71,6 +72,7 @@ function migrateSlide(slide: Slide): Slide {
     ...slide,
     label: coerceLocalized(slide.label as unknown),
     headline: coerceLocalized(slide.headline as unknown),
+    typography: cleanTypography(slide.typography),
     ...(transforms && Object.keys(transforms).length > 0 ? { transforms } : { transforms: undefined }),
     ...(textElements && textElements.length > 0 ? { textElements } : { textElements: undefined }),
   };

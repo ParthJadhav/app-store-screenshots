@@ -55,6 +55,15 @@ export type TextElement = {
   align?: "left" | "center" | "right";
 };
 
+export type SlideTypography = {
+  /** Uppercase label above the headline (default 1). */
+  labelScale?: number;
+  /** Main headline, or feature-graphic tagline (default 1). */
+  headlineScale?: number;
+  /** Feature graphic app name only (default 1). */
+  appNameScale?: number;
+};
+
 export type Slide = {
   id: string;
   layout: SlideLayout;
@@ -63,6 +72,8 @@ export type Slide = {
   screenshot: string;         // path under /screenshots/ — may contain {locale}
   screenshotSecondary?: string; // for two-devices layout — may contain {locale}
   inverted?: boolean;         // dark background variant
+  /** Optional relative font-size scales for built-in caption text. */
+  typography?: SlideTypography;
   // Per-element overrides; when present, replaces layout default placement.
   transforms?: Partial<Record<BuiltInElementId, ElementTransform>>;
   textElements?: TextElement[];
