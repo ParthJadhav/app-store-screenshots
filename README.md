@@ -1,5 +1,7 @@
 # App Store & Google Play Screenshots Generator
 
+[![Listed on TakoAPI](https://takoapi.com/api/badge/parthjadhav-app-store-screenshots)](https://takoapi.com/agents/parthjadhav-app-store-screenshots)
+
 A skill for AI coding agents that scaffolds a production-ready Next.js editor for App Store and Google Play marketing screenshots. It gives you a connected canvas, real device frames, inspector controls, persistent project state, and one-click export bundles at store-ready sizes.
 
 ![Current connected-canvas editor showing a Bloom screenshot deck](example.png)
