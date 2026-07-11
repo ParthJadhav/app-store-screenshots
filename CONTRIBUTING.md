@@ -39,7 +39,7 @@ Usually not a fit:
 
 ## Testing Changes
 
-There is no traditional automated test suite in this repository, so use a manual smoke-test checklist.
+The editor template has unit tests plus a production verification command. Run both automated and browser smoke tests.
 
 ### For README-only changes
 
@@ -57,6 +57,15 @@ Validate the skill against at least one realistic scenario:
    - preserves the "screenshots are ads, not docs" principle
    - keeps the generator architecture coherent
    - produces export instructions that are internally consistent
+
+### For template changes
+
+```bash
+cd skills/app-store-screenshots/template
+bun run verify
+```
+
+Then smoke-test the affected workflow in a real browser. For schema or editor-command changes, add focused Vitest coverage. Confirm `bun run starter:sync` leaves `app-store-screenshots.json` synchronized with `src/lib/starter-project.json`.
 
 ### Strongly Recommended
 

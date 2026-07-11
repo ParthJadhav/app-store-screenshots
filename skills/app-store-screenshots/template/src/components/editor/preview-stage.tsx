@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button";
 import { DEVICE_LABEL, LAYOUT_LABEL } from "@/lib/constants";
 import type {
   Device,
+  CanvasSettings,
   ElementId,
   ElementTransform,
   Orientation,
+  MasterLayer,
   SelectedElement,
   Slide,
   Theme,
+  VisualLayer,
 } from "@/lib/types";
 import { DeckCanvas, getCanvas } from "./slide-canvas";
 
@@ -24,13 +27,16 @@ type Props = {
   appName?: string;
   appIcon?: string;
   connectedCanvas: boolean;
-  selectedElement: SelectedElement | null;
+  masterLayers: MasterLayer[];
+  canvasSettings: CanvasSettings;
+  selectedElements: SelectedElement[];
   onActiveSlideChange: (id: string) => void;
   onLabelChange: (slide: Slide, v: string) => void;
   onHeadlineChange: (slide: Slide, v: string) => void;
   onTextElementTextChange: (slideId: string, id: string, v: string) => void;
   onElementChange: (slideId: string, id: ElementId, t: ElementTransform) => void;
-  onSelectElement: (element: SelectedElement | null) => void;
+  onLayerChange: (slideId: string, scope: "slide" | "master", layerId: string, patch: Partial<VisualLayer>) => void;
+  onSelectElement: (element: SelectedElement | null, additive?: boolean) => void;
 };
 
 // Fits one full-resolution screen inside the viewport while keeping the whole
@@ -45,12 +51,15 @@ export function PreviewStage({
   appName,
   appIcon,
   connectedCanvas,
-  selectedElement,
+  masterLayers,
+  canvasSettings,
+  selectedElements,
   onActiveSlideChange,
   onLabelChange,
   onHeadlineChange,
   onTextElementTextChange,
   onElementChange,
+  onLayerChange,
   onSelectElement,
 }: Props) {
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -139,9 +148,11 @@ export function PreviewStage({
               appName={appName}
               appIcon={appIcon}
               connectedCanvas={connectedCanvas}
+              masterLayers={masterLayers}
+              canvasSettings={canvasSettings}
               editable
               previewScale={scale}
-              selectedElement={selectedElement}
+              selectedElements={selectedElements}
               activeSlideId={activeSlide?.id || null}
               showGuides
               edit={{
@@ -155,6 +166,7 @@ export function PreviewStage({
                 },
                 onTextElementTextChange,
                 onElementChange,
+                onLayerChange,
                 onSelectElement,
                 onSelectScreen: handleCanvasActiveSlideChange,
               }}

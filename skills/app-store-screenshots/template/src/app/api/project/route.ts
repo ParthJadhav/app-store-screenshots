@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { migrateProject, validateProject } from "@/lib/project-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export async function GET() {
   try {
     const raw = await fs.readFile(filePath(), "utf8");
     const parsed = JSON.parse(raw);
-    return NextResponse.json({ ok: true, state: parsed });
+    return NextResponse.json({ ok: true, state: migrateProject(parsed) });
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code;
     if (code === "ENOENT") {
@@ -35,8 +36,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
   try {
-    const pretty = JSON.stringify(body, null, 2) + "\n";
-    await fs.writeFile(filePath(), pretty, "utf8");
+    const validation = validateProject(body);
+    if (!validation.ok) {
+      return NextResponse.json(
+        { ok: false, error: validation.errors.join(" ") },
+        { status: 422 },
+      );
+    }
+    const pretty = JSON.stringify(validation.state, null, 2) + "\n";
+    const target = filePath();
+    const temporary = `${target}.tmp`;
+    await fs.writeFile(temporary, pretty, "utf8");
+    await fs.rename(temporary, target);
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json(

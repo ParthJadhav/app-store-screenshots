@@ -10,6 +10,14 @@ export const CANVAS: Record<Device, { w: number; h: number; wL?: number; hL?: nu
   "feature-graphic": { w: 1024, h: 500 },
 };
 
+export function getCanvasSize(device: Device, orientation: Orientation) {
+  const canvas = CANVAS[device];
+  if ((device === "android-7" || device === "android-10") && orientation === "landscape") {
+    return { cW: canvas.wL!, cH: canvas.hL! };
+  }
+  return { cW: canvas.w, cH: canvas.h };
+}
+
 // ---------- Export sizes per device ----------
 export type ExportSize = { label: string; w: number; h: number };
 
@@ -93,6 +101,9 @@ export const THEMES: Record<string, Theme> = {
     fgAlt: "#F6F1EA",
     accent: "#5B7CFA",
     muted: "#6B7280",
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    headlineFontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    cornerRadius: 28,
   },
   "dark-bold": {
     id: "dark-bold",
@@ -103,6 +114,9 @@ export const THEMES: Record<string, Theme> = {
     fgAlt: "#0B1020",
     accent: "#8B5CF6",
     muted: "#94A3B8",
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    headlineFontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    cornerRadius: 28,
   },
   "warm-editorial": {
     id: "warm-editorial",
@@ -113,6 +127,9 @@ export const THEMES: Record<string, Theme> = {
     fgAlt: "#F7E8DA",
     accent: "#D97706",
     muted: "#7C5A47",
+    fontFamily: "Georgia, ui-serif, serif",
+    headlineFontFamily: "Georgia, ui-serif, serif",
+    cornerRadius: 22,
   },
   "ocean-fresh": {
     id: "ocean-fresh",
@@ -123,6 +140,9 @@ export const THEMES: Record<string, Theme> = {
     fgAlt: "#E0F2FE",
     accent: "#0284C7",
     muted: "#475569",
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    headlineFontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    cornerRadius: 30,
   },
   "bloom-roast": {
     id: "bloom-roast",
@@ -133,19 +153,28 @@ export const THEMES: Record<string, Theme> = {
     fgAlt: "#FFF7EA",
     accent: "#B8794A",
     muted: "#65736B",
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    headlineFontFamily: "Georgia, ui-serif, serif",
+    cornerRadius: 26,
   },
 };
 
-export function themeById(themeId: string | undefined): Theme {
-  return THEMES[themeId || ""] || THEMES[DEFAULT_THEME_ID];
+export function themeById(
+  themeId: string | undefined,
+  customThemes: Record<string, Theme> = {},
+): Theme {
+  return customThemes[themeId || ""] || THEMES[themeId || ""] || THEMES[DEFAULT_THEME_ID];
 }
 
-export function hasTheme(themeId: string | undefined): boolean {
-  return !!themeId && !!THEMES[themeId];
+export function hasTheme(
+  themeId: string | undefined,
+  customThemes: Record<string, Theme> = {},
+): boolean {
+  return !!themeId && (!!customThemes[themeId] || !!THEMES[themeId]);
 }
 
 export const STORAGE_KEY = "app-store-screenshots:project:v1";
-export const PROJECT_SCHEMA_VERSION = 2;
+export const PROJECT_SCHEMA_VERSION = 3;
 
 export const DEVICE_LABEL: Record<Device, string> = {
   iphone: "iPhone",

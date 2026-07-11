@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { AlertTriangle, Check, Cloud, Download, UnfoldHorizontal, RotateCcw } from "lucide-react";
+import { AlertTriangle, Check, Cloud, Download, UnfoldHorizontal, RotateCcw, Settings2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,7 +23,9 @@ import {
   supportsLandscape,
 } from "@/lib/constants";
 import { detectPlatform } from "@/lib/defaults";
-import type { Device, Orientation } from "@/lib/types";
+import { runPreflight } from "@/lib/preflight";
+import type { Device, Orientation, ProjectState } from "@/lib/types";
+import { ProjectSettingsDialog, type ProjectSettingsTab } from "./project-settings-dialog";
 
 type Props = {
   appName: string;
@@ -44,12 +46,18 @@ type Props = {
   savedAt: number | null;
   saveError: string | null;
   busy: boolean;
+  project: ProjectState;
+  updateProject: (update: (state: ProjectState) => ProjectState) => void;
 };
 
 export function Toolbar(props: Props) {
   const platform = detectPlatform(props.device);
   const hasLandscape = supportsLandscape(props.device);
   const [resetOpen, setResetOpen] = React.useState(false);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [settingsTab, setSettingsTab] = React.useState<ProjectSettingsTab>("theme");
+  const preflight = React.useMemo(() => runPreflight(props.project), [props.project]);
+  const openSettings = (tab: ProjectSettingsTab) => { setSettingsTab(tab); setSettingsOpen(true); };
 
   // Track last device per platform so iOS/Android tabs preserve user's choice.
   const lastByPlatform = React.useRef<{ ios: Device; android: Device }>({
@@ -172,9 +180,19 @@ export function Toolbar(props: Props) {
         </Select>
       )}
 
+      <Select value={props.project.activeVariantId} onValueChange={(activeVariantId) => props.updateProject((state) => ({ ...state, activeVariantId }))} disabled={props.busy}>
+        <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>{props.project.variants.map((variant) => <SelectItem key={variant.id} value={variant.id}>{variant.name}</SelectItem>)}</SelectContent>
+      </Select>
+
       <div className="ml-auto flex shrink-0 items-center gap-2">
         <SaveStatus savedAt={props.savedAt} saveError={props.saveError} />
         <span aria-hidden className="h-5 w-px bg-border" />
+        <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" onClick={() => openSettings("preflight")} title="Open automated preflight" disabled={props.busy}>
+          <ShieldCheck className={`h-4 w-4 ${preflight.errors ? "text-destructive" : "text-green-600"}`} />
+          {preflight.errors ? `${preflight.errors} errors` : `${preflight.warnings} warnings`}
+        </Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openSettings("theme")} title="Project tools" aria-label="Project tools" disabled={props.busy}><Settings2 className="h-4 w-4" /></Button>
         <Button
           variant="ghost"
           size="icon"
@@ -191,7 +209,7 @@ export function Toolbar(props: Props) {
           disabled={!!props.exporting}
           size="sm"
           className="h-8"
-          title="Export every size × locale for this device as a zip"
+          title="Export every variant, device, orientation, size, and locale as a zip"
         >
           <Download className="h-4 w-4" />
           {props.exporting ? `Exporting ${props.exporting}` : "Export bundle"}
@@ -233,6 +251,7 @@ export function Toolbar(props: Props) {
           </div>
         </DialogContent>
       </Dialog>
+      <ProjectSettingsDialog open={settingsOpen} tab={settingsTab} state={props.project} onOpenChange={setSettingsOpen} onTabChange={setSettingsTab} onChange={props.updateProject} />
     </div>
   );
 }

@@ -7,20 +7,17 @@ export type Device =
   | "feature-graphic";
 
 export type Orientation = "portrait" | "landscape";
-
 export type Platform = "ios" | "android";
 
-// Layouts the editor can render. Vary across slides for visual rhythm.
 export type SlideLayout =
-  | "hero"             // centered device, headline above
-  | "device-bottom"    // headline top, device bottom-center
-  | "device-top"       // device top, headline bottom (contrast)
-  | "two-devices"      // back + front phones, headline above
-  | "no-device"        // big headline + decorative blob, no device
-  | "split-landscape"  // landscape tablets only: caption left + device right
-  | "feature-graphic"; // 1024×500 banner with icon + name + tagline
+  | "hero"
+  | "device-bottom"
+  | "device-top"
+  | "two-devices"
+  | "no-device"
+  | "split-landscape"
+  | "feature-graphic";
 
-// Per-element rect in canvas pixel space. Optional rotation in degrees and zIndex.
 export type ElementTransform = {
   x: number;
   y: number;
@@ -31,21 +28,87 @@ export type ElementTransform = {
 };
 
 export type BuiltInElementId = "caption" | "device" | "deviceSecondary";
+export type LayerElementId = `layer:${string}`;
 export type TextElementId = `text:${string}`;
-export type ElementId = BuiltInElementId | TextElementId;
+export type ElementId = BuiltInElementId | LayerElementId | TextElementId;
 
 export type SelectedElement = {
   slideId: string;
   elementId: ElementId;
+  scope?: "slide" | "master";
 };
 
-// Per-locale text keyed by locale code (e.g. "en", "de"). A locale is absent
-// if the user hasn't typed anything for it; renderers fall back to en (see
-// lib/locale.ts). The set of locales a project targets lives on
-// ProjectState.locales.
 export type LocalizedText = Partial<Record<string, string>>;
 
-export type TextElement = {
+export type LayerMeta = {
+  name: string;
+  hidden?: boolean;
+  locked?: boolean;
+  opacity?: number;
+  groupId?: string;
+  linkId?: string;
+};
+
+type VisualLayerBase = LayerMeta & {
+  id: string;
+  transform: ElementTransform;
+};
+
+export type TextLayer = VisualLayerBase & {
+  kind: "text";
+  text: LocalizedText;
+  fontSize?: number;
+  fontWeight?: number;
+  fontFamily?: string;
+  color?: string;
+  align?: "left" | "center" | "right";
+  lineHeight?: number;
+};
+
+export type ImageLayer = VisualLayerBase & {
+  kind: "image";
+  src: string;
+  fit?: "cover" | "contain" | "fill";
+  borderRadius?: number;
+  shadow?: string;
+};
+
+export type ShapeLayer = VisualLayerBase & {
+  kind: "shape";
+  shape: "rectangle" | "ellipse" | "line";
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  borderRadius?: number;
+  shadow?: string;
+};
+
+export type VisualLayer = TextLayer | ImageLayer | ShapeLayer;
+
+export type LayerGroup = {
+  id: string;
+  name: string;
+  layerIds: string[];
+  locked?: boolean;
+  hidden?: boolean;
+};
+
+export type Slide = {
+  id: string;
+  layout: SlideLayout;
+  label: LocalizedText;
+  headline: LocalizedText;
+  screenshot: string;
+  screenshotSecondary?: string;
+  inverted?: boolean;
+  transforms?: Partial<Record<BuiltInElementId, ElementTransform>>;
+  layers?: VisualLayer[];
+  groups?: LayerGroup[];
+  /** v2 compatibility only; migrated into `layers` on load. */
+  textElements?: LegacyTextElement[];
+};
+
+export type LegacyTextElement = {
   id: string;
   text: LocalizedText;
   transform: ElementTransform;
@@ -55,18 +118,8 @@ export type TextElement = {
   align?: "left" | "center" | "right";
 };
 
-export type Slide = {
-  id: string;
-  layout: SlideLayout;
-  label: LocalizedText;       // tiny uppercase caption above headline, per locale
-  headline: LocalizedText;    // multi-line; newlines are intentional, per locale
-  screenshot: string;         // path under /screenshots/ — may contain {locale}
-  screenshotSecondary?: string; // for two-devices layout — may contain {locale}
-  inverted?: boolean;         // dark background variant
-  // Per-element overrides; when present, replaces layout default placement.
-  transforms?: Partial<Record<BuiltInElementId, ElementTransform>>;
-  textElements?: TextElement[];
-};
+/** @deprecated v2 compatibility alias. New content uses `TextLayer`. */
+export type TextElement = LegacyTextElement;
 
 export type ThemeId =
   | "clean-light"
@@ -78,27 +131,57 @@ export type ThemeId =
 export type Theme = {
   id: string;
   name: string;
-  bg: string;          // primary background
-  bgAlt: string;       // inverted background
-  fg: string;          // text on bg
-  fgAlt: string;       // text on bgAlt
+  bg: string;
+  bgAlt: string;
+  fg: string;
+  fgAlt: string;
   accent: string;
   muted: string;
+  background?: string;
+  backgroundAlt?: string;
+  fontFamily?: string;
+  headlineFontFamily?: string;
+  cornerRadius?: number;
+};
+
+export type DeviceDecks = Record<Device, Slide[]>;
+
+export type ProjectVariant = {
+  id: string;
+  name: string;
+  slidesByDevice: DeviceDecks;
+};
+
+export type MasterLayer = VisualLayer & {
+  devices?: Device[];
+};
+
+export type CanvasSettings = {
+  snapping: boolean;
+  snapSize: number;
+  showRulers: boolean;
+  showSafeAreas: boolean;
+  safeAreaPercent: number;
 };
 
 export type ProjectState = {
-  schemaVersion?: number;
+  schemaVersion: 3;
   appName: string;
   themeId: string;
-  // v1 projects render as isolated screens until the user opts into connected crops.
+  customThemes: Record<string, Theme>;
   connectedCanvas: boolean;
-  // Locales this project targets. Drives the toolbar dropdown and bulk export.
-  // Single-locale projects ship as ["en"] and hide the locale UI.
   locales: string[];
   locale: string;
   device: Device;
   orientation: Orientation;
-  // Per-device slide decks so platform switching preserves work
-  slidesByDevice: Record<Device, Slide[]>;
-  appIcon?: string;    // path under /public (e.g. /app-icon.png)
+  appIcon?: string;
+  activeVariantId: string;
+  variants: ProjectVariant[];
+  masterLayers: MasterLayer[];
+  canvasSettings: CanvasSettings;
+};
+
+export type LegacyProjectState = Partial<ProjectState> & {
+  schemaVersion?: number;
+  slidesByDevice?: Partial<DeviceDecks>;
 };

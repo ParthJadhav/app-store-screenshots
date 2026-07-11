@@ -17,17 +17,20 @@ Example screenshots generated with this skill were accepted for [Bloom Coffee Sh
 - Supports iOS, iPad, Android phone, Android tablet, and Play Store feature graphic decks
 - Exports exact PNG bundles for all required App Store and Google Play sizes
 - Supports locales, RTL-aware copy/layout guidance, reusable themes, and in-place project migration
+- Adds generalized text, image, and shape layers with multi-select, grouping, alignment, lock/hide, snapping, rulers, safe areas, and keyboard nudging
+- Supports master elements, adjacent-screen linked elements, complete creative variants, automated preflight, and all-project export
 
 ## Current Editor UI
 
 - **Connected canvas** - view the whole screenshot strip at once, drag elements across screen boundaries, then export each screen as a precise crop.
 - **Isolated mode** - preserve legacy decks where offscreen elements should not leak into neighboring exports.
 - **Screen sidebar** - add, select, and drag-to-reorder screens with live thumbnails.
-- **Inspector** - edit layout, labels, headlines, screenshots, element stacking, and transforms from the right panel.
+- **Inspector** - edit layout, copy, screenshots, and generalized visual layers; multi-select, align, group, lock, hide, link, or promote layers to masters.
 - **Platform switcher** - keep iOS and Android decks side by side while sharing the same editor workflow.
 - **Device selector** - design for iPhone, iPad, Android phone, Android tablets, and feature graphic formats.
 - **Autosave** - writes to disk through `/api/project` and mirrors to `localStorage` for instant reloads.
-- **Export bundle** - downloads a zip organized by platform, device, resolution, and locale.
+- **Project tools** - edit themes, manage locales and variants, configure snapping/rulers/safe areas, and review continuous preflight.
+- **Export bundle** - downloads every variant, device, supported orientation, resolution, and locale with a machine-readable manifest.
 
 Tip: when capturing source iPhone screenshots, the 6.1-inch simulator is usually the easiest starting point because it reduces manual image adjustment inside the frames.
 
@@ -119,6 +122,7 @@ project/
 │           ├── tablet-10/landscape/{locale}/01.png
 │           └── feature-graphic/{locale}/01.png
 ├── app-store-screenshots.json
+├── scripts/sync-starter.mjs
 ├── src/app/
 │   ├── layout.tsx
 │   └── page.tsx
@@ -129,11 +133,23 @@ project/
 │   ├── inspector.tsx
 │   ├── preview-stage.tsx
 │   ├── slide-canvas.tsx
+│   ├── layer-inspector.tsx
+│   ├── project-settings-dialog.tsx
+│   ├── use-project-export.tsx
+│   ├── canvas/
 │   ├── screenshot-picker.tsx
 │   └── device-frames.tsx
 └── src/lib/
     ├── constants.ts
     ├── defaults.ts
+    ├── starter-project.json
+    ├── project-schema.ts
+    ├── project-model.ts
+    ├── editor-commands.ts
+    ├── canvas-geometry.ts
+    ├── preflight.ts
+    ├── export-plan.ts
+    ├── theme-model.ts
     ├── storage.ts
     ├── image-cache.ts
     └── types.ts
@@ -146,9 +162,9 @@ The template README inside `skills/app-store-screenshots/template/README.md` doc
 1. Capture real app screenshots from a simulator, emulator, or device.
 2. Ask your agent to scaffold or migrate the screenshot project.
 3. Run the dev server and open the editor.
-4. Use the sidebar to organize screens and the inspector to edit copy, layouts, screenshots, and elements.
+4. Use the sidebar to organize screens, the inspector to build layers, and Project tools to manage themes, locales, variants, guides, and preflight.
 5. Choose Connected or Isolated mode depending on whether elements should cross screen boundaries.
-6. Click **Export bundle** to download store-ready PNGs.
+6. Resolve blocking preflight errors, then click **Export bundle** to download the complete store-ready project.
 
 Uploaded files are saved under `public/screenshots/uploaded/`, and the canonical deck state is saved in `app-store-screenshots.json`. Commit both to make the deck reproducible after a fresh clone.
 
@@ -178,11 +194,12 @@ Screenshots are designed at the largest size for each platform and scaled down f
 
 ## Project State
 
-- `app-store-screenshots.json` is the source of truth for app name, active platform, active device, locales, theme, connected-canvas mode, slides, screenshot paths, and transforms.
+- `src/lib/starter-project.json` is the canonical fresh-project/reset state; `bun run starter:sync` copies it to the root runtime file.
+- `app-store-screenshots.json` is the runtime source of truth for variants, device decks, locales, themes, layers, masters, canvas settings, screenshots, and transforms.
 - Runtime uploads are written to `public/screenshots/uploaded/<hash>.png`.
 - The editor reads `localStorage` first for fast paint, then reconciles with the project file.
-- Older project files are migrated to schema v2 on load while keeping legacy decks isolated unless connected mode was already enabled.
-- Custom themes live in `src/lib/constants.ts`; unknown theme ids fall back to `clean-light`.
+- Older project files are migrated to schema v3 on load while keeping legacy decks isolated unless connected mode was already enabled.
+- Built-in themes live in `src/lib/constants.ts`; theme-editor changes are stored as project-local custom themes.
 
 ## Design Standards
 
