@@ -129,7 +129,7 @@ export function Toolbar(props: Props) {
         onValueChange={(v) => props.setDevice(v as Device)}
         disabled={props.busy}
       >
-        <SelectTrigger className="h-8 w-44 text-xs">
+        <SelectTrigger aria-label="Device" className="h-8 w-44 text-xs">
           <SelectValue placeholder="Device">{deviceLabel}</SelectValue>
         </SelectTrigger>
         <SelectContent>
@@ -155,7 +155,7 @@ export function Toolbar(props: Props) {
           onValueChange={(v) => props.setOrientation(v as Orientation)}
           disabled={props.busy}
         >
-          <SelectTrigger className="h-8 w-32 text-xs">
+          <SelectTrigger aria-label="Orientation" className="h-8 w-32 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -167,7 +167,7 @@ export function Toolbar(props: Props) {
 
       {showLocale && (
         <Select value={props.locale} onValueChange={props.setLocale} disabled={props.busy}>
-          <SelectTrigger className="h-8 w-20 text-xs">
+          <SelectTrigger aria-label="Locale" className="h-8 w-20 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -181,11 +181,11 @@ export function Toolbar(props: Props) {
       )}
 
       <Select value={props.project.activeVariantId} onValueChange={(activeVariantId) => props.updateProject((state) => ({ ...state, activeVariantId }))} disabled={props.busy}>
-        <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+        <SelectTrigger aria-label="Variant" className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
         <SelectContent>{props.project.variants.map((variant) => <SelectItem key={variant.id} value={variant.id}>{variant.name}</SelectItem>)}</SelectContent>
       </Select>
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:ml-auto sm:w-auto sm:shrink-0">
         <SaveStatus savedAt={props.savedAt} saveError={props.saveError} />
         <span aria-hidden className="h-5 w-px bg-border" />
         <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" onClick={() => openSettings("preflight")} title="Open automated preflight" disabled={props.busy}>

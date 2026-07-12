@@ -60,11 +60,11 @@ function ThemeEditor({ state, onChange }: EditorProps) {
   return <Panel title="Theme editor" description="Editing a built-in theme creates a custom copy, so defaults remain stable.">
     <div className="flex gap-2">
       <Select value={state.themeId} onValueChange={(themeId) => onChange((current) => ({ ...current, themeId }))}>
-        <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+        <SelectTrigger aria-label="Theme preset" className="flex-1"><SelectValue /></SelectTrigger>
         <SelectContent>{allThemes.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent>
       </Select>
       <Button variant="outline" onClick={() => onChange((current) => createCustomTheme(current))}><Plus className="h-4 w-4" />Duplicate</Button>
-      <Button variant="ghost" size="icon" disabled={!state.customThemes[state.themeId]} onClick={() => onChange((current) => deleteCustomTheme(current, current.themeId))}><Trash2 className="h-4 w-4" /></Button>
+      <Button aria-label="Delete theme" variant="ghost" size="icon" disabled={!state.customThemes[state.themeId]} onClick={() => onChange((current) => deleteCustomTheme(current, current.themeId))}><Trash2 className="h-4 w-4" /></Button>
     </div>
     <Field label="Name"><Input aria-label="Theme name" value={theme.name} onChange={(event) => patch({ name: event.target.value })} /></Field>
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -96,7 +96,7 @@ function LocaleEditor({ state, onChange }: EditorProps) {
         <button className="w-20 text-left text-sm font-semibold uppercase" onClick={() => onChange((current) => ({ ...current, locale }))}>{locale}</button>
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${completion}%` }} /></div>
         <span className="w-10 text-right text-xs text-muted-foreground">{completion}%</span>
-        <Button variant="ghost" size="icon" disabled={state.locales.length === 1} onClick={() => onChange((current) => ({ ...current, locales: current.locales.filter((item) => item !== locale), locale: current.locale === locale ? current.locales.find((item) => item !== locale) || "en" : current.locale }))}><Trash2 className="h-4 w-4" /></Button>
+        <Button aria-label={`Delete locale ${locale.toUpperCase()}`} variant="ghost" size="icon" disabled={state.locales.length === 1} onClick={() => onChange((current) => ({ ...current, locales: current.locales.filter((item) => item !== locale), locale: current.locale === locale ? current.locales.find((item) => item !== locale) || "en" : current.locale }))}><Trash2 className="h-4 w-4" /></Button>
       </div>;
     })}</div>
   </Panel>;
@@ -109,7 +109,7 @@ function VariantEditor({ state, onChange }: EditorProps) {
     <div className="space-y-2">{state.variants.map((variant) => <div key={variant.id} className={`flex items-center gap-2 rounded-md border p-2 ${state.activeVariantId === variant.id ? "border-primary bg-primary/5" : ""}`}>
       <input type="radio" checked={state.activeVariantId === variant.id} onChange={() => onChange((current) => ({ ...current, activeVariantId: variant.id }))} aria-label={`Select ${variant.name}`} />
       <Input aria-label={`Variant name: ${variant.name}`} value={variant.name} onChange={(event) => onChange((current) => renameVariant(current, variant.id, event.target.value))} />
-      <Button variant="ghost" size="icon" disabled={state.variants.length === 1} onClick={() => onChange((current) => removeVariant(current, variant.id))}><Trash2 className="h-4 w-4" /></Button>
+      <Button aria-label={`Delete variant ${variant.name}`} variant="ghost" size="icon" disabled={state.variants.length === 1} onClick={() => onChange((current) => removeVariant(current, variant.id))}><Trash2 className="h-4 w-4" /></Button>
     </div>)}</div>
   </Panel>;
 }

@@ -82,7 +82,7 @@ export function Inspector(props: Props) {
               });
             }}
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label="Slide layout"><SelectValue /></SelectTrigger>
             <SelectContent>{layoutOptions.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
@@ -90,6 +90,7 @@ export function Inspector(props: Props) {
         {!featureGraphic && (
           <Field label="Label">
             <Input
+              aria-label="Slide label"
               value={localeLabel}
               onChange={(event) => props.onChange({ label: writeLocalized(slide.label, locale, event.target.value) })}
               placeholder={pickText(slide.label, locale) || "FEATURE 01"}
@@ -99,6 +100,7 @@ export function Inspector(props: Props) {
 
         <Field label={featureGraphic ? "Tagline" : "Headline"} hint="newline = break">
           <Textarea
+            aria-label={featureGraphic ? "Slide tagline" : "Slide headline"}
             value={localeHeadline}
             onChange={(event) => props.onChange({ headline: writeLocalized(slide.headline, locale, event.target.value) })}
             rows={3}
