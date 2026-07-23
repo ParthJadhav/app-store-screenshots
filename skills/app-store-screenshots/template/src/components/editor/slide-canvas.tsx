@@ -17,6 +17,7 @@ import {
   CANVAS,
   IPAD_RATIO,
   MK_RATIO,
+  desktopW,
   ipadW,
   phoneW,
   phoneWSmall,
@@ -31,7 +32,9 @@ import {
   AndroidTabletL,
   AndroidTabletP,
   IPad,
+  MacOSWindow,
   Phone,
+  WindowsWindow,
 } from "./device-frames";
 
 type FrameComp = React.ComponentType<{
@@ -57,6 +60,8 @@ function getFrameAspect(device: Device, orientation: Orientation) {
     case "ipad":        return IPAD_RATIO;
     case "android-7":
     case "android-10":  return orientation === "landscape" ? 8 / 5 : 5 / 8;
+    case "macos":       return 16 / 10;
+    case "windows":     return 16 / 9;
     default:            return 1;
   }
 }
@@ -79,6 +84,18 @@ export function getFrameForDevice(device: Device, orientation: Orientation): {
         return { Comp: AndroidTabletL, widthFn: tabletLW, smallWidthFn: (cW, cH) => tabletLW(cW, cH, 0.5) };
       }
       return { Comp: AndroidTabletP, widthFn: tabletPW, smallWidthFn: (cW, cH) => tabletPW(cW, cH, 0.62) };
+    case "macos":
+      return {
+        Comp: MacOSWindow,
+        widthFn: (cW, cH) => desktopW(cW, cH, 16 / 10),
+        smallWidthFn: (cW, cH) => desktopW(cW, cH, 16 / 10, 0.58),
+      };
+    case "windows":
+      return {
+        Comp: WindowsWindow,
+        widthFn: (cW, cH) => desktopW(cW, cH, 16 / 9),
+        smallWidthFn: (cW, cH) => desktopW(cW, cH, 16 / 9, 0.58),
+      };
     default:
       return { Comp: Phone, widthFn: phoneW, smallWidthFn: phoneWSmall };
   }

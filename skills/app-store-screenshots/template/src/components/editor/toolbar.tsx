@@ -23,7 +23,7 @@ import {
   supportsLandscape,
 } from "@/lib/constants";
 import { detectPlatform } from "@/lib/defaults";
-import type { Device, Orientation } from "@/lib/types";
+import type { Device, Orientation, Platform } from "@/lib/types";
 
 type Props = {
   appName: string;
@@ -51,10 +51,11 @@ export function Toolbar(props: Props) {
   const hasLandscape = supportsLandscape(props.device);
   const [resetOpen, setResetOpen] = React.useState(false);
 
-  // Track last device per platform so iOS/Android tabs preserve user's choice.
-  const lastByPlatform = React.useRef<{ ios: Device; android: Device }>({
+  // Track last device per platform so tabs preserve the user's previous target.
+  const lastByPlatform = React.useRef<Record<Platform, Device>>({
     ios: platform === "ios" ? props.device : "iphone",
     android: platform === "android" ? props.device : "android",
+    desktop: platform === "desktop" ? props.device : "macos",
   });
   React.useEffect(() => {
     lastByPlatform.current[platform] = props.device;
@@ -102,8 +103,7 @@ export function Toolbar(props: Props) {
         value={platform}
         onValueChange={(p) => {
           if (props.busy) return;
-          const next = p === "ios" ? lastByPlatform.current.ios : lastByPlatform.current.android;
-          props.setDevice(next);
+          props.setDevice(lastByPlatform.current[p as Platform]);
         }}
       >
         <TabsList className="h-8 p-0.5">
@@ -112,6 +112,9 @@ export function Toolbar(props: Props) {
           </TabsTrigger>
           <TabsTrigger value="android" className="h-7 px-3 text-xs" disabled={props.busy}>
             Android
+          </TabsTrigger>
+          <TabsTrigger value="desktop" className="h-7 px-3 text-xs" disabled={props.busy}>
+            Desktop
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -130,12 +133,17 @@ export function Toolbar(props: Props) {
               <SelectItem value="iphone">{DEVICE_LABEL.iphone}</SelectItem>
               <SelectItem value="ipad">{DEVICE_LABEL.ipad}</SelectItem>
             </>
-          ) : (
+          ) : platform === "android" ? (
             <>
               <SelectItem value="android">{DEVICE_LABEL.android}</SelectItem>
               <SelectItem value="android-7">{DEVICE_LABEL["android-7"]}</SelectItem>
               <SelectItem value="android-10">{DEVICE_LABEL["android-10"]}</SelectItem>
               <SelectItem value="feature-graphic">{DEVICE_LABEL["feature-graphic"]}</SelectItem>
+            </>
+          ) : (
+            <>
+              <SelectItem value="macos">{DEVICE_LABEL.macos}</SelectItem>
+              <SelectItem value="windows">{DEVICE_LABEL.windows}</SelectItem>
             </>
           )}
         </SelectContent>

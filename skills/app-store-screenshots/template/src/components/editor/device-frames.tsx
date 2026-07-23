@@ -275,6 +275,79 @@ export function IPad({ src, alt = "", style, hideEmpty }: FrameProps) {
   );
 }
 
+export function MacOSWindow(props: FrameProps) {
+  return <DesktopWindow {...props} platform="macos" />;
+}
+
+export function WindowsWindow(props: FrameProps) {
+  return <DesktopWindow {...props} platform="windows" />;
+}
+
+function DesktopWindow({
+  src,
+  alt = "",
+  style,
+  hideEmpty,
+  platform,
+}: FrameProps & { platform: "macos" | "windows" }) {
+  const resolved = img(src);
+  const isMac = platform === "macos";
+  return (
+    <div style={{ position: "relative", aspectRatio: isMac ? "16 / 10" : "16 / 9", ...style }}>
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          borderRadius: isMac ? "2.2% / 3.5%" : "1.2% / 2.1%",
+          background: isMac ? "#d8d8dc" : "#e8e8e8",
+          boxShadow: "0 18px 60px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(0,0,0,0.18)",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            height: "7%",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 1.4%",
+            background: isMac ? "linear-gradient(#f4f4f5, #dedee1)" : "#f3f3f3",
+            borderBottom: "1px solid rgba(0,0,0,0.15)",
+          }}
+        >
+          {isMac ? (
+            <div style={{ display: "flex", gap: "0.55%", width: "100%" }}>
+              {["#ff5f57", "#febc2e", "#28c840"].map((color) => (
+                <span key={color} style={{ width: "1.15%", aspectRatio: "1", borderRadius: "50%", background: color }} />
+              ))}
+            </div>
+          ) : (
+            <>
+              <span style={{ width: "1.1%", aspectRatio: "1", background: "#0078d4", marginRight: "1%" }} />
+              <span style={{ width: "25%", height: "34%", borderRadius: 3, background: "rgba(0,0,0,0.08)" }} />
+              <div style={{ marginLeft: "auto", display: "flex", gap: "1.8em", fontSize: "min(1.4vw, 18px)", color: "#333" }}>
+                <span>−</span><span>□</span><span>×</span>
+              </div>
+            </>
+          )}
+        </div>
+        <div style={{ width: "100%", height: "93%", overflow: "hidden", background: "#111" }}>
+          {resolved ? (
+            <img
+              src={resolved}
+              alt={alt}
+              style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+              draggable={false}
+            />
+          ) : hideEmpty ? null : (
+            <EmptySlot />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EmptySlot() {
   return (
     <div

@@ -7,6 +7,8 @@ export const CANVAS: Record<Device, { w: number; h: number; wL?: number; hL?: nu
   android:       { w: 1080, h: 1920 },
   "android-7":   { w: 1200, h: 1920, wL: 1920, hL: 1200 },
   "android-10":  { w: 1600, h: 2560, wL: 2560, hL: 1600 },
+  macos:         { w: 2880, h: 1800 },
+  windows:       { w: 2560, h: 1440 },
   "feature-graphic": { w: 1024, h: 500 },
 };
 
@@ -27,6 +29,16 @@ export const EXPORT_SIZES: Record<Device, ExportSize[]> = {
   android:       [{ label: "Phone",          w: 1080, h: 1920 }],
   "android-7":   [{ label: '7" Portrait',    w: 1200, h: 1920 }],
   "android-10":  [{ label: '10" Portrait',   w: 1600, h: 2560 }],
+  macos: [
+    { label: "2880 × 1800", w: 2880, h: 1800 },
+    { label: "2560 × 1600", w: 2560, h: 1600 },
+    { label: "1440 × 900",  w: 1440, h: 900 },
+  ],
+  windows: [
+    { label: "2560 × 1440", w: 2560, h: 1440 },
+    { label: "1920 × 1080", w: 1920, h: 1080 },
+    { label: "1366 × 768",  w: 1366, h: 768 },
+  ],
   "feature-graphic": [{ label: "Feature Graphic", w: 1024, h: 500 }],
 };
 
@@ -78,6 +90,9 @@ export function tabletLW(cW: number, cH: number, clamp = 0.62) {
 }
 export function ipadW(cW: number, cH: number, clamp = 0.75) {
   return Math.min(clamp, 0.72 * (cH / cW) * IPAD_RATIO);
+}
+export function desktopW(cW: number, cH: number, aspect: number, clamp = 0.72) {
+  return Math.min(clamp, 0.68 * (cH / cW) * aspect);
 }
 
 // ---------- Themes ----------
@@ -153,6 +168,8 @@ export const DEVICE_LABEL: Record<Device, string> = {
   android: "Android Phone",
   "android-7": 'Android 7" Tablet',
   "android-10": 'Android 10" Tablet',
+  macos: "macOS",
+  windows: "Windows",
   "feature-graphic": "Feature Graphic",
 };
 
