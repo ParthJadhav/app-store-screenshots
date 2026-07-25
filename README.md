@@ -1,5 +1,12 @@
 # App Store & Google Play Screenshots Generator
 
+> [!NOTE]
+> **Fork & Credits**: This repository is maintained by [Deniz Tanyeli](https://github.com/deniztnyl) at [deniztnyl/app-store-template](https://github.com/deniztnyl/app-store-template). Special thanks to [Parth Jadhav](https://github.com/ParthJadhav) for creating and open-sourcing the original [app-store-screenshots](https://github.com/ParthJadhav/app-store-screenshots) project under the MIT License!
+>
+> **Added Features**:
+> - **Custom Background Editor**: Full support for custom gradient transitions (linear & radial with angle control), preset color palettes, solid colors, and uploading custom background images.
+> - **Global Background Propagation**: Apply custom background styles to all screens with one click.
+
 A skill for AI coding agents that scaffolds a production-ready Next.js editor for App Store and Google Play marketing screenshots. It gives you a connected canvas, real device frames, inspector controls, persistent project state, and one-click export bundles at store-ready sizes.
 
 ![Current connected-canvas editor showing a Bloom screenshot deck](example.png)

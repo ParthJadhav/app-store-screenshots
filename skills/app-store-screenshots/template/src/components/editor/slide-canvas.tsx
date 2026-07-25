@@ -10,6 +10,7 @@ import type {
   Orientation,
   SelectedElement,
   Slide,
+  SlideBackgroundConfig,
   TextElement,
   Theme,
 } from "@/lib/types";
@@ -709,6 +710,50 @@ export function DeckCanvas({
   );
 }
 
+function computeSlideBackground(bg: SlideBackgroundConfig | undefined, theme: Theme, inverted?: boolean): React.CSSProperties {
+  if (!bg || bg.type === "theme") {
+    return {
+      background: backgroundFor(theme, inverted),
+    };
+  }
+
+  if (bg.type === "gradient") {
+    const c1 = bg.color1 || "#3b82f6";
+    const c2 = bg.color2 || "#9333ea";
+    if (bg.gradientType === "radial") {
+      return {
+        background: `radial-gradient(circle at center, ${c1}, ${c2})`,
+      };
+    }
+    const angle = bg.angle ?? 160;
+    return {
+      background: `linear-gradient(${angle}deg, ${c1}, ${c2})`,
+    };
+  }
+
+  if (bg.type === "solid") {
+    return {
+      background: bg.color || "#1e293b",
+    };
+  }
+
+  if (bg.type === "image" && bg.imageUrl) {
+    const isData = bg.imageUrl.startsWith("data:");
+    const imageSrc = isData ? bg.imageUrl : img(bg.imageUrl);
+    const fit = bg.imageFit || "cover";
+    return {
+      backgroundImage: `url("${imageSrc}")`,
+      backgroundSize: fit === "fill" ? "100% 100%" : fit,
+      backgroundPosition: "center center",
+      backgroundRepeat: "no-repeat",
+    };
+  }
+
+  return {
+    background: backgroundFor(theme, inverted),
+  };
+}
+
 function SlideBackground({
   slide,
   cW,
@@ -721,18 +766,37 @@ function SlideBackground({
   theme: Theme;
 }) {
   const inverted = !!slide.inverted;
+  const bgConfig = slide.background;
+  const bgStyle = computeSlideBackground(bgConfig, theme, inverted);
+  const showBlobs = !bgConfig?.hideBlobs;
+  const overlayOpacity = bgConfig?.type === "image" ? (bgConfig.overlayOpacity ?? 0) : 0;
+
   return (
     <div
       style={{
         position: "absolute",
         inset: 0,
         overflow: "hidden",
-        background: backgroundFor(theme, inverted),
         color: inverted ? theme.fgAlt : theme.fg,
+        ...bgStyle,
       }}
     >
-      <Blob cW={cW} color={theme.accent} x={-15} y={-10} size={55} opacity={inverted ? 0.25 : 0.32} />
-      <Blob cW={cW} color={theme.accent} x={70} y={75} size={45} opacity={inverted ? 0.18 : 0.25} />
+      {overlayOpacity > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: `rgba(0, 0, 0, ${overlayOpacity})`,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      {showBlobs && (
+        <>
+          <Blob cW={cW} color={theme.accent} x={-15} y={-10} size={55} opacity={inverted ? 0.25 : 0.32} />
+          <Blob cW={cW} color={theme.accent} x={70} y={75} size={45} opacity={inverted ? 0.18 : 0.25} />
+        </>
+      )}
     </div>
   );
 }

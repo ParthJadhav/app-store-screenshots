@@ -21,6 +21,7 @@ import type {
   ElementTransform,
   SelectedElement,
   Slide,
+  SlideBackgroundConfig,
 } from "@/lib/types";
 import { Inspector } from "./inspector";
 import { PreviewStage } from "./preview-stage";
@@ -251,6 +252,24 @@ export function ScreenshotEditor() {
           ),
         },
       }));
+    },
+    [setState],
+  );
+
+  const applyBackgroundToAll = React.useCallback(
+    (bgConfig: SlideBackgroundConfig | undefined, inverted?: boolean) => {
+      setState((prev) => ({
+        ...prev,
+        slidesByDevice: {
+          ...prev.slidesByDevice,
+          [prev.device]: (prev.slidesByDevice[prev.device] || []).map((slide) => ({
+            ...slide,
+            background: bgConfig ? { ...bgConfig } : undefined,
+            ...(inverted !== undefined ? { inverted } : {}),
+          })),
+        },
+      }));
+      toast.success("Background applied to all screens");
     },
     [setState],
   );
@@ -647,6 +666,7 @@ export function ScreenshotEditor() {
                   elementId ? { slideId: activeSlide.id, elementId } : null,
                 )
               }
+              onApplyBackgroundToAll={applyBackgroundToAll}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">

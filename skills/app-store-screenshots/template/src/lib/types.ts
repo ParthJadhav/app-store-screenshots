@@ -55,6 +55,21 @@ export type TextElement = {
   align?: "left" | "center" | "right";
 };
 
+export type BackgroundType = "theme" | "gradient" | "solid" | "image";
+
+export type SlideBackgroundConfig = {
+  type: BackgroundType;
+  gradientType?: "linear" | "radial";
+  color1?: string;
+  color2?: string;
+  angle?: number;
+  color?: string;
+  imageUrl?: string;
+  imageFit?: "cover" | "contain" | "fill";
+  overlayOpacity?: number;
+  hideBlobs?: boolean;
+};
+
 export type Slide = {
   id: string;
   layout: SlideLayout;
@@ -63,6 +78,7 @@ export type Slide = {
   screenshot: string;         // path under /screenshots/ — may contain {locale}
   screenshotSecondary?: string; // for two-devices layout — may contain {locale}
   inverted?: boolean;         // dark background variant
+  background?: SlideBackgroundConfig; // custom background configuration
   // Per-element overrides; when present, replaces layout default placement.
   transforms?: Partial<Record<BuiltInElementId, ElementTransform>>;
   textElements?: TextElement[];

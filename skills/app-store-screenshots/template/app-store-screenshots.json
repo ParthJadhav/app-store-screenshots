@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "appName": "My App",
   "themeId": "clean-light",
-  "connectedCanvas": true,
+  "connectedCanvas": false,
   "locales": [
     "en"
   ],
@@ -13,7 +13,31 @@
   "slidesByDevice": {
     "iphone": [
       {
-        "id": "s_mppgoot8_1",
+        "id": "s_ms003zi5_0",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Sell one\nidea per slide."
+        },
+        "screenshot": "",
+        "background": {
+          "type": "theme",
+          "color1": "#3b82f6",
+          "color2": "#9333ea",
+          "angle": 160,
+          "gradientType": "linear",
+          "color": "#1e293b",
+          "imageUrl": "",
+          "imageFit": "cover",
+          "overlayOpacity": 0,
+          "hideBlobs": false
+        },
+        "inverted": false
+      },
+      {
+        "id": "s_ms003zi5_1",
         "layout": "device-bottom",
         "label": {
           "en": "FEATURE 01"
@@ -21,20 +45,10 @@
         "headline": {
           "en": "Your headline\nlives here."
         },
-        "screenshot": "",
-        "transforms": {
-          "device": {
-            "x": -450.80914890045335,
-            "y": 955.2104098119215,
-            "width": 977,
-            "height": 1991,
-            "rotation": 0,
-            "zIndex": 3
-          }
-        }
+        "screenshot": ""
       },
       {
-        "id": "s_mppgoot8_2",
+        "id": "s_ms003zi5_2",
         "layout": "two-devices",
         "label": {
           "en": "FEATURE 02"
@@ -43,36 +57,10 @@
           "en": "Show two\nscreens at once."
         },
         "screenshot": "",
-        "screenshotSecondary": "",
-        "transforms": {
-          "deviceSecondary": {
-            "x": 688.4726540204801,
-            "y": 1027.8020089177937,
-            "width": 871.2,
-            "height": 1774.7929549902153,
-            "rotation": 9,
-            "zIndex": 2
-          },
-          "caption": {
-            "x": 112.3403055229146,
-            "y": 87.89358401880148,
-            "width": 1108.8,
-            "height": 803.0400000000001,
-            "rotation": 0,
-            "zIndex": 4
-          },
-          "device": {
-            "x": -499.3230870111943,
-            "y": 928.1034802753068,
-            "width": 912.27195389049,
-            "height": 1858.4640000000002,
-            "rotation": 0,
-            "zIndex": 3
-          }
-        }
+        "screenshotSecondary": ""
       },
       {
-        "id": "s_mppgoot8_3",
+        "id": "s_ms003zi5_3",
         "layout": "device-top",
         "label": {
           "en": "FEATURE 03"
@@ -84,8 +72,8 @@
         "inverted": true,
         "transforms": {
           "device": {
-            "x": 741.2739047128944,
-            "y": 899.4937720329012,
+            "x": 153.18224783861672,
+            "y": -286.8,
             "width": 1013.6355043227666,
             "height": 2064.96,
             "rotation": 0,
@@ -94,7 +82,7 @@
         }
       },
       {
-        "id": "s_mppgoot8_4",
+        "id": "s_ms003zi5_4",
         "layout": "no-device",
         "label": {
           "en": "MORE"
@@ -102,21 +90,11 @@
         "headline": {
           "en": "And so\nmuch more."
         },
-        "screenshot": "",
-        "transforms": {
-          "caption": {
-            "x": 190.97767332549847,
-            "y": 2159.762397179791,
-            "width": 1056,
-            "height": 860.4,
-            "rotation": 0,
-            "zIndex": 4
-          }
-        }
+        "screenshot": ""
       },
       {
-        "id": "s_mpptmmaa_i",
-        "layout": "device-bottom",
+        "id": "s_ms006fcb_j",
+        "layout": "hero",
         "label": {
           "en": "NEW"
         },
@@ -125,26 +103,26 @@
         },
         "screenshot": "",
         "transforms": {
-          "device": {
-            "x": -517.4781516913463,
-            "y": 846.7845828437136,
-            "width": 1013.6355043227666,
-            "height": 2064.96,
-            "rotation": 0,
-            "zIndex": 3
-          },
           "caption": {
-            "x": 103.91492361927885,
-            "y": 195.738472385429,
+            "x": 105.60000000000036,
+            "y": 258.12,
             "width": 1108.8,
             "height": 803.0400000000001,
             "rotation": 0,
             "zIndex": 4
+          },
+          "device": {
+            "x": 153.1822478386166,
+            "y": 1112.7839999999999,
+            "width": 1013.6355043227666,
+            "height": 2064.96,
+            "rotation": 0,
+            "zIndex": 3
           }
         }
       },
       {
-        "id": "s_mpptvxsc_i",
+        "id": "s_ms009ccn_k",
         "layout": "device-bottom",
         "label": {
           "en": "NEW"
@@ -153,11 +131,63 @@
           "en": "Edit this\nheadline."
         },
         "screenshot": ""
+      },
+      {
+        "id": "s_ms009d06_l",
+        "layout": "device-bottom",
+        "label": {
+          "en": "NEW"
+        },
+        "headline": {
+          "en": "Edit this\nheadline."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_ms009d6f_m",
+        "layout": "device-bottom",
+        "label": {
+          "en": "NEW"
+        },
+        "headline": {
+          "en": "Edit this\nheadline."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_ms009dd3_n",
+        "layout": "device-bottom",
+        "label": {
+          "en": "NEW"
+        },
+        "headline": {
+          "en": "Edit this\nheadline."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_ms009h55_o",
+        "layout": "no-device",
+        "label": {},
+        "headline": {
+          "en": "Edit thisine."
+        },
+        "screenshot": "",
+        "transforms": {
+          "caption": {
+            "x": 132.00000383831778,
+            "y": 1003.5441063915367,
+            "width": 1056,
+            "height": 864,
+            "rotation": 0,
+            "zIndex": 4
+          }
+        }
       }
     ],
     "android": [
       {
-        "id": "s_mppgoot8_5",
+        "id": "s_ms003zi5_5",
         "layout": "hero",
         "label": {
           "en": "MEET YOUR APP"
@@ -165,20 +195,10 @@
         "headline": {
           "en": "Sell one\nidea per slide."
         },
-        "screenshot": "",
-        "transforms": {
-          "device": {
-            "x": 221.0133038940457,
-            "y": 677.042167580437,
-            "width": 678.5844380403457,
-            "height": 1470.266282420749,
-            "rotation": 0,
-            "zIndex": 3
-          }
-        }
+        "screenshot": ""
       },
       {
-        "id": "s_mppgoot8_6",
+        "id": "s_ms003zi5_6",
         "layout": "device-bottom",
         "label": {
           "en": "FEATURE 01"
@@ -186,20 +206,10 @@
         "headline": {
           "en": "Your headline\nlives here."
         },
-        "screenshot": "",
-        "transforms": {
-          "device": {
-            "x": 191.68310412906385,
-            "y": 659.512330975256,
-            "width": 678.5844380403457,
-            "height": 1470.266282420749,
-            "rotation": 0,
-            "zIndex": 3
-          }
-        }
+        "screenshot": ""
       },
       {
-        "id": "s_mppgoot8_7",
+        "id": "s_ms003zi5_7",
         "layout": "two-devices",
         "label": {
           "en": "FEATURE 02"
@@ -208,28 +218,10 @@
           "en": "Show two\nscreens at once."
         },
         "screenshot": "",
-        "screenshotSecondary": "",
-        "transforms": {
-          "deviceSecondary": {
-            "x": 280.3938895417132,
-            "y": 525.2025777437636,
-            "width": 678.5844380403457,
-            "height": 1470.266282420749,
-            "rotation": 0,
-            "zIndex": 2
-          },
-          "device": {
-            "x": 143.75673196815296,
-            "y": 569.6411918847805,
-            "width": 610.7259942363112,
-            "height": 1323.239654178674,
-            "rotation": 0,
-            "zIndex": 3
-          }
-        }
+        "screenshotSecondary": ""
       },
       {
-        "id": "s_mppgoot8_8",
+        "id": "s_ms003zi5_8",
         "layout": "device-top",
         "label": {
           "en": "FEATURE 03"
@@ -241,7 +233,7 @@
         "inverted": true
       },
       {
-        "id": "s_mppgoot8_9",
+        "id": "s_ms003zi5_9",
         "layout": "no-device",
         "label": {
           "en": "MORE"
@@ -254,7 +246,7 @@
     ],
     "ipad": [
       {
-        "id": "s_mppgoot8_a",
+        "id": "s_ms003zi5_a",
         "layout": "hero",
         "label": {
           "en": "MEET YOUR APP"
@@ -262,20 +254,10 @@
         "headline": {
           "en": "Made for\nthe big screen."
         },
-        "screenshot": "",
-        "transforms": {
-          "device": {
-            "x": 68.64736263219729,
-            "y": 818.7701245593419,
-            "width": 1525.7087999999999,
-            "height": 1981.4399999999998,
-            "rotation": 0,
-            "zIndex": 3
-          }
-        }
+        "screenshot": ""
       },
       {
-        "id": "s_mppgoot8_b",
+        "id": "s_ms003zi5_b",
         "layout": "device-bottom",
         "label": {
           "en": "FEATURE 01"
@@ -286,7 +268,7 @@
         "screenshot": ""
       },
       {
-        "id": "s_mppgoot8_c",
+        "id": "s_ms003zi5_c",
         "layout": "device-top",
         "label": {
           "en": "FEATURE 02"
@@ -300,7 +282,7 @@
     ],
     "android-7": [
       {
-        "id": "s_mppgoot8_d",
+        "id": "s_ms003zi5_d",
         "layout": "hero",
         "label": {
           "en": "MEET YOUR APP"
@@ -311,7 +293,7 @@
         "screenshot": ""
       },
       {
-        "id": "s_mppgoot8_e",
+        "id": "s_ms003zi5_e",
         "layout": "split-landscape",
         "label": {
           "en": "FEATURE 01"
@@ -324,7 +306,7 @@
     ],
     "android-10": [
       {
-        "id": "s_mppgoot8_f",
+        "id": "s_ms003zi5_f",
         "layout": "hero",
         "label": {
           "en": "MEET YOUR APP"
@@ -335,7 +317,7 @@
         "screenshot": ""
       },
       {
-        "id": "s_mppgoot8_g",
+        "id": "s_ms003zi5_g",
         "layout": "split-landscape",
         "label": {
           "en": "FEATURE 01"
@@ -348,7 +330,7 @@
     ],
     "feature-graphic": [
       {
-        "id": "s_mppgoot8_h",
+        "id": "s_ms003zi5_h",
         "layout": "feature-graphic",
         "label": {},
         "headline": {
@@ -357,13 +339,5 @@
         "screenshot": ""
       }
     ]
-  },
-  "crossScreenMockupsByDevice": {
-    "iphone": [],
-    "ipad": [],
-    "android": [],
-    "android-7": [],
-    "android-10": [],
-    "feature-graphic": []
   }
 }

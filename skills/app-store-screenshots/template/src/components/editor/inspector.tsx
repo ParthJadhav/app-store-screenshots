@@ -40,9 +40,11 @@ import type {
   ElementTransform,
   Orientation,
   Slide,
+  SlideBackgroundConfig,
   SlideLayout,
   TextElement,
 } from "@/lib/types";
+import { BackgroundControls } from "./background-controls";
 import { ScreenshotPicker } from "./screenshot-picker";
 import { getCanvas, getElementTransform } from "./slide-canvas";
 
@@ -54,6 +56,7 @@ type Props = {
   selectedElementId: ElementId | null;
   onChange: (patch: Partial<Slide>) => void;
   onSelectElement: (id: ElementId | null) => void;
+  onApplyBackgroundToAll?: (bgConfig: SlideBackgroundConfig | undefined, inverted?: boolean) => void;
 };
 
 const ELEMENT_LABEL: Record<BuiltInElementId, string> = {
@@ -70,6 +73,7 @@ export function Inspector({
   selectedElementId,
   onChange,
   onSelectElement,
+  onApplyBackgroundToAll,
 }: Props) {
   const isFeatureGraphic = device === "feature-graphic" || slide.layout === "feature-graphic";
   const isNoDevice = slide.layout === "no-device";
@@ -186,6 +190,12 @@ export function Inspector({
             />
           </div>
         )}
+
+        <BackgroundControls
+          slide={slide}
+          onChange={onChange}
+          onApplyToAll={onApplyBackgroundToAll}
+        />
 
         {!isFeatureGraphic && (
           <ElementTransformControls
