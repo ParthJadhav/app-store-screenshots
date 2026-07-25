@@ -460,15 +460,161 @@ export function BackgroundControls({ slide, onChange, onApplyToAll }: Props) {
           <span>Koyu Metin Modu / Inverted</span>
         </label>
 
-        <label className="flex items-center gap-2 cursor-pointer text-xs">
-          <input
-            type="checkbox"
-            checked={!bg.hideBlobs}
-            onChange={(e) => updateBg({ hideBlobs: !e.target.checked })}
-            className="rounded border-input text-primary accent-primary"
-          />
-          <span>Ortam Baloncuklarını Göster (Blobs)</span>
-        </label>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+            <input
+              type="checkbox"
+              checked={!bg.hideBlobs}
+              onChange={(e) => updateBg({ hideBlobs: !e.target.checked })}
+              className="rounded border-input text-primary accent-primary"
+            />
+            <span>Ortam Baloncuklarını Göster (Blobs)</span>
+          </label>
+
+          {!bg.hideBlobs && (
+            <div className="mt-2 space-y-2.5 rounded-md border bg-muted/40 p-2.5">
+              {/* BLOB COLORS */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <Label className="text-[11px] text-muted-foreground">Baloncuk Renkleri</Label>
+                  {(bg.blobColor || bg.blobColor2) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 px-1 text-[10px] text-muted-foreground hover:text-foreground"
+                      onClick={() => updateBg({ blobColor: undefined, blobColor2: undefined })}
+                    >
+                      Sıfırla
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="color"
+                      value={bg.blobColor || "#3b82f6"}
+                      onChange={(e) => updateBg({ blobColor: e.target.value })}
+                      className="h-6 w-6 cursor-pointer rounded border border-input bg-transparent p-0.5"
+                    />
+                    <Input
+                      type="text"
+                      value={bg.blobColor || ""}
+                      placeholder="Renk 1"
+                      onChange={(e) => updateBg({ blobColor: e.target.value })}
+                      className="h-6 font-mono text-[11px] uppercase"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="color"
+                      value={bg.blobColor2 || bg.blobColor || "#9333ea"}
+                      onChange={(e) => updateBg({ blobColor2: e.target.value })}
+                      className="h-6 w-6 cursor-pointer rounded border border-input bg-transparent p-0.5"
+                    />
+                    <Input
+                      type="text"
+                      value={bg.blobColor2 || ""}
+                      placeholder="Renk 2"
+                      onChange={(e) => updateBg({ blobColor2: e.target.value })}
+                      className="h-6 font-mono text-[11px] uppercase"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Color Presets */}
+                <div className="flex items-center gap-1 pt-1">
+                  <span className="text-[9px] text-muted-foreground">Hazır:</span>
+                  {[
+                    { c1: "#ffffff", c2: "#ffffff", title: "Beyaz Glow" },
+                    { c1: "#00f2fe", c2: "#4facfe", title: "Neon Mavi" },
+                    { c1: "#ff0844", c2: "#ffb199", title: "Neon Pembe" },
+                    { c1: "#f6d365", c2: "#fda085", title: "Altın Işıltı" },
+                    { c1: "#11998e", c2: "#38ef7d", title: "Zümrüt" },
+                    { c1: "#8e2de2", c2: "#4a00e0", title: "Koyu Mor" },
+                  ].map((preset) => (
+                    <button
+                      key={preset.title}
+                      type="button"
+                      onClick={() => updateBg({ blobColor: preset.c1, blobColor2: preset.c2 })}
+                      className="h-4 w-4 rounded-full border border-background shadow-xs hover:scale-110"
+                      style={{ background: `linear-gradient(135deg, ${preset.c1}, ${preset.c2})` }}
+                      title={preset.title}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* BLOB SIZE / SCALE */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <Label className="text-[11px] text-muted-foreground">Baloncuk Boyutu</Label>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    {Math.round((bg.blobScale ?? 1.0) * 100)}%
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0.3"
+                    max="2.0"
+                    step="0.05"
+                    value={bg.blobScale ?? 1.0}
+                    onChange={(e) => updateBg({ blobScale: Number(e.target.value) })}
+                    className="w-full accent-primary"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-5 px-1.5 text-[9px]"
+                    onClick={() => updateBg({ blobScale: 1.0 })}
+                  >
+                    100%
+                  </Button>
+                </div>
+              </div>
+
+              {/* BLOB OPACITY */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <Label className="text-[11px] text-muted-foreground">Saydamlık (Opacity)</Label>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    {Math.round((bg.blobOpacity ?? 0.3) * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1.0"
+                  step="0.05"
+                  value={bg.blobOpacity ?? 0.3}
+                  onChange={(e) => updateBg({ blobOpacity: Number(e.target.value) })}
+                  className="w-full accent-primary"
+                />
+              </div>
+
+              {/* BLOB BLUR */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <Label className="text-[11px] text-muted-foreground">Bulanıklık (Blur)</Label>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    {bg.blobBlur ?? 60}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="160"
+                  step="5"
+                  value={bg.blobBlur ?? 60}
+                  onChange={(e) => updateBg({ blobBlur: Number(e.target.value) })}
+                  className="w-full accent-primary"
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -322,6 +322,7 @@ function Blob({
   y,
   size,
   opacity = 0.4,
+  blurOverride,
 }: {
   cW: number;
   color: string;
@@ -329,7 +330,9 @@ function Blob({
   y: number;
   size: number;
   opacity?: number;
+  blurOverride?: number;
 }) {
+  const blurPx = blurOverride !== undefined ? blurOverride : cW * 0.06;
   return (
     <div
       style={{
@@ -340,7 +343,7 @@ function Blob({
         aspectRatio: "1 / 1",
         background: color,
         borderRadius: "50%",
-        filter: `blur(${cW * 0.06}px)`,
+        filter: `blur(${blurPx}px)`,
         opacity,
         pointerEvents: "none",
       }}
@@ -788,6 +791,15 @@ function SlideBackground({
   const showBlobs = !bgConfig?.hideBlobs;
   const overlayOpacity = bgConfig?.type === "image" ? (bgConfig.overlayOpacity ?? 0) : 0;
 
+  // Blob custom overrides
+  const blobColor1 = bgConfig?.blobColor || theme.accent;
+  const blobColor2 = bgConfig?.blobColor2 || bgConfig?.blobColor || theme.accent;
+  const blobScale = bgConfig?.blobScale ?? 1.0;
+  const customOpacity = bgConfig?.blobOpacity;
+  const op1 = customOpacity !== undefined ? customOpacity : inverted ? 0.25 : 0.32;
+  const op2 = customOpacity !== undefined ? customOpacity * 0.8 : inverted ? 0.18 : 0.25;
+  const blobBlur = bgConfig?.blobBlur;
+
   return (
     <div
       style={{
@@ -810,8 +822,24 @@ function SlideBackground({
       )}
       {showBlobs && (
         <>
-          <Blob cW={cW} color={theme.accent} x={-15} y={-10} size={55} opacity={inverted ? 0.25 : 0.32} />
-          <Blob cW={cW} color={theme.accent} x={70} y={75} size={45} opacity={inverted ? 0.18 : 0.25} />
+          <Blob
+            cW={cW}
+            color={blobColor1}
+            x={-15}
+            y={-10}
+            size={55 * blobScale}
+            opacity={op1}
+            blurOverride={blobBlur}
+          />
+          <Blob
+            cW={cW}
+            color={blobColor2}
+            x={70}
+            y={75}
+            size={45 * blobScale}
+            opacity={op2}
+            blurOverride={blobBlur}
+          />
         </>
       )}
     </div>

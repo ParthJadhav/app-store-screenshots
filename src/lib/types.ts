@@ -75,6 +75,11 @@ export type SlideBackgroundConfig = {
   imageFit?: "cover" | "contain" | "fill";
   overlayOpacity?: number;
   hideBlobs?: boolean;
+  blobColor?: string;
+  blobColor2?: string;
+  blobScale?: number;
+  blobOpacity?: number;
+  blobBlur?: number;
 };
 
 export type Slide = {

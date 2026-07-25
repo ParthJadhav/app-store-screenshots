@@ -198,8 +198,8 @@
         "screenshot": "/screenshots/uploaded/686111dfcc56becf.png",
         "background": {
           "type": "gradient",
-          "color1": "#ff4b1f",
-          "color2": "#ff9068",
+          "color1": "#f09819",
+          "color2": "#FF512f",
           "angle": 135,
           "gradientType": "linear",
           "color": "#1e293b",
@@ -221,7 +221,10 @@
         },
         "labelStyle": {
           "fontFamily": "'Outfit', sans-serif",
-          "color": "#5b7cfa"
+          "color": "#4158b4"
+        },
+        "headlineStyle": {
+          "color": "#000000"
         }
       },
       {
@@ -242,7 +245,28 @@
             "height": 1470.266282420749,
             "rotation": 0,
             "zIndex": 3
+          },
+          "caption": {
+            "x": 86.40000000000009,
+            "y": 153.6,
+            "width": 907.2,
+            "height": 537.6,
+            "rotation": 0,
+            "zIndex": 4
           }
+        },
+        "background": {
+          "type": "gradient",
+          "color1": "#FFD8C4",
+          "color2": "#FFF0E6",
+          "angle": 160,
+          "gradientType": "linear",
+          "color": "#1e293b",
+          "imageUrl": "",
+          "imageFit": "cover",
+          "overlayOpacity": 0,
+          "hideBlobs": false,
+          "blobOpacity": 0.25
         }
       },
       {
@@ -272,6 +296,18 @@
             "rotation": 0,
             "zIndex": 4
           }
+        },
+        "background": {
+          "type": "gradient",
+          "color1": "#FF9966",
+          "color2": "#FF5E62",
+          "angle": 160,
+          "gradientType": "linear",
+          "color": "#1e293b",
+          "imageUrl": "",
+          "imageFit": "cover",
+          "overlayOpacity": 0,
+          "hideBlobs": true
         }
       },
       {
