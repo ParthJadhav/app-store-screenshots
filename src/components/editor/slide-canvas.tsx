@@ -535,6 +535,7 @@ export function SlideCanvas({
       <FeatureGraphicCanvas
         slide={slide}
         cW={cW}
+        cH={cH}
         theme={theme}
         locale={locale}
         appName={appName}
@@ -637,6 +638,7 @@ export function DeckCanvas({
               <FeatureGraphicCanvas
                 slide={slide}
                 cW={cW}
+                cH={cH}
                 theme={theme}
                 locale={locale}
                 appName={appName}
@@ -897,6 +899,7 @@ function ScreenGuide({
 function FeatureGraphicCanvas({
   slide,
   cW,
+  cH,
   theme,
   locale,
   appName,
@@ -906,6 +909,7 @@ function FeatureGraphicCanvas({
 }: {
   slide: Slide;
   cW: number;
+  cH: number;
   theme: Theme;
   locale: string;
   appName?: string;
@@ -913,6 +917,16 @@ function FeatureGraphicCanvas({
   editable?: boolean;
   edit?: EditHandlers;
 }) {
+  const inverted = !!slide.inverted;
+  const fg = inverted ? theme.fgAlt : theme.fg;
+
+  // Headline style overrides
+  const hStyle = slide.headlineStyle || {};
+  const headlineColor = hStyle.color || fg;
+  const headlineScale = hStyle.fontSizeScale ?? 1.0;
+  const headlineWeight = hStyle.fontWeight ?? 700;
+  const headlineFont = hStyle.fontFamily && hStyle.fontFamily !== "default" ? hStyle.fontFamily : undefined;
+
   return (
     <div
       style={{
@@ -920,14 +934,12 @@ function FeatureGraphicCanvas({
         height: "100%",
         position: "relative",
         overflow: "hidden",
-        background: `linear-gradient(135deg, ${theme.bgAlt} 0%, ${shade(theme.bgAlt, -10)} 50%, ${theme.accent} 200%)`,
         display: "flex",
         alignItems: "center",
         padding: `0 ${cW * 0.06}px`,
-        color: theme.fgAlt,
       }}
     >
-      <Blob cW={cW} color={theme.accent} x={70} y={20} size={50} opacity={0.45} />
+      <SlideBackground slide={slide} cW={cW} cH={cH} theme={theme} />
       <div style={{ display: "flex", alignItems: "center", gap: cW * 0.03, zIndex: 2 }}>
         {appIcon && img(appIcon) ? (
           <img
@@ -938,6 +950,7 @@ function FeatureGraphicCanvas({
               height: cW * 0.13,
               borderRadius: cW * 0.022,
               boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+              objectFit: "cover",
             }}
             draggable={false}
           />
@@ -962,15 +975,20 @@ function FeatureGraphicCanvas({
           </div>
         )}
         <div>
-          <div style={{ fontSize: cW * 0.06, fontWeight: 800, lineHeight: 1.05 }}>{appName || "App"}</div>
+          <div style={{ fontSize: cW * 0.06, fontWeight: 800, lineHeight: 1.05, color: fg }}>
+            {appName || "App"}
+          </div>
           <EditableText
             value={pickText(slide.headline, locale)}
             editable={editable}
             multiline
             onChange={edit?.onHeadlineChange}
+            placeholder="Headline goes here"
             style={{
-              fontSize: cW * 0.028,
-              color: "rgba(255,255,255,0.85)",
+              fontSize: cW * 0.028 * headlineScale,
+              fontWeight: headlineWeight,
+              fontFamily: headlineFont,
+              color: headlineColor,
               marginTop: cW * 0.012,
               lineHeight: 1.25,
             }}

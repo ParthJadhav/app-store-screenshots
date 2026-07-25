@@ -58,6 +58,8 @@ type Props = {
   onChange: (patch: Partial<Slide>) => void;
   onSelectElement: (id: ElementId | null) => void;
   onApplyBackgroundToAll?: (bgConfig: SlideBackgroundConfig | undefined, inverted?: boolean) => void;
+  appIcon?: string;
+  onAppIconChange?: (icon: string) => void;
 };
 
 const ELEMENT_LABEL: Record<BuiltInElementId, string> = {
@@ -75,6 +77,8 @@ export function Inspector({
   onChange,
   onSelectElement,
   onApplyBackgroundToAll,
+  appIcon,
+  onAppIconChange,
 }: Props) {
   const isFeatureGraphic = device === "feature-graphic" || slide.layout === "feature-graphic";
   const isNoDevice = slide.layout === "no-device";
@@ -204,6 +208,18 @@ export function Inspector({
           </div>
         )}
 
+        {isFeatureGraphic && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">App Logo / Icon</Label>
+            <ScreenshotPicker
+              label="Logo (PNG / JPG)"
+              value={appIcon || ""}
+              locale={locale}
+              onChange={(v) => onAppIconChange?.(v)}
+            />
+          </div>
+        )}
+
         <BackgroundControls
           slide={slide}
           onChange={onChange}
@@ -224,7 +240,7 @@ export function Inspector({
 
         {isFeatureGraphic && (
           <p className="rounded-md border bg-muted/40 p-3 text-[11px] leading-relaxed text-muted-foreground">
-            Shows app icon + name + tagline. Drop an icon at <span className="rounded bg-background px-1 py-0.5 font-mono text-[10px] text-foreground">/public/app-icon.png</span> (or leave blank — the app initial will be used). Name is set in the toolbar.
+            Shows app logo + name + tagline. Upload your logo above, or leave blank to show the app initial. App name can be changed in the top toolbar.
           </p>
         )}
       </div>

@@ -657,6 +657,8 @@ export function ScreenshotEditor() {
               device={state.device}
               orientation={state.orientation}
               locale={state.locale}
+              appIcon={state.appIcon}
+              onAppIconChange={(icon) => setState((prev) => ({ ...prev, appIcon: icon }))}
               selectedElementId={
                 selectedElement?.slideId === activeSlide.id ? selectedElement.elementId : null
               }

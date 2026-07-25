@@ -171,11 +171,10 @@ export function BackgroundControls({ slide, onChange, onApplyToAll }: Props) {
             key={item.id}
             type="button"
             onClick={() => handleTypeChange(item.id)}
-            className={`rounded px-1.5 py-1 text-[11px] font-medium transition-all ${
-              currentType === item.id
+            className={`rounded px-1.5 py-1 text-[11px] font-medium transition-all ${currentType === item.id
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             {item.label}
           </button>
@@ -319,9 +318,8 @@ export function BackgroundControls({ slide, onChange, onApplyToAll }: Props) {
       {currentType === "image" && (
         <div className="space-y-3 pt-1">
           <div
-            className={`relative flex items-center gap-3 rounded-md border p-2 transition-colors ${
-              dragging ? "border-primary bg-accent ring-2 ring-primary/30" : "border-input"
-            }`}
+            className={`relative flex items-center gap-3 rounded-md border p-2 transition-colors ${dragging ? "border-primary bg-accent ring-2 ring-primary/30" : "border-input"
+              }`}
             onDragOver={(e) => {
               e.preventDefault();
               if (!dragging) setDragging(true);
