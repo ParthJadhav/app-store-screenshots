@@ -237,6 +237,21 @@ function Caption({
   // Scale typography off the *shorter* dimension so landscape layouts don't
   // produce headlines so tall they overlap the device frame.
   const unit = Math.min(cW, cH);
+
+  // Label style overrides
+  const lStyle = slide.labelStyle || {};
+  const labelColor = lStyle.color || accent;
+  const labelScale = lStyle.fontSizeScale ?? 1.0;
+  const labelWeight = lStyle.fontWeight ?? 600;
+  const labelFont = lStyle.fontFamily && lStyle.fontFamily !== "default" ? lStyle.fontFamily : undefined;
+
+  // Headline style overrides
+  const hStyle = slide.headlineStyle || {};
+  const headlineColor = hStyle.color || fg;
+  const headlineScale = hStyle.fontSizeScale ?? 1.0;
+  const headlineWeight = hStyle.fontWeight ?? 700;
+  const headlineFont = hStyle.fontFamily && hStyle.fontFamily !== "default" ? hStyle.fontFamily : undefined;
+
   return (
     <div style={{ textAlign: align, position: "relative", width: "100%" }}>
       <EditableText
@@ -246,10 +261,11 @@ function Caption({
         onFocus={onFocus}
         placeholder="LABEL"
         style={{
-          fontSize: unit * 0.028,
-          fontWeight: 600,
+          fontSize: unit * 0.028 * labelScale,
+          fontWeight: labelWeight,
+          fontFamily: labelFont,
           letterSpacing: unit * 0.0015,
-          color: accent,
+          color: labelColor,
           textTransform: "uppercase",
           marginBottom: unit * 0.018,
           minHeight: unit * 0.03,
@@ -263,11 +279,12 @@ function Caption({
         onFocus={onFocus}
         placeholder="Headline goes here"
         style={{
-          fontSize: unit * 0.092,
-          fontWeight: 700,
+          fontSize: unit * 0.092 * headlineScale,
+          fontWeight: headlineWeight,
+          fontFamily: headlineFont,
           lineHeight: 0.96,
           letterSpacing: -unit * 0.001,
-          color: fg,
+          color: headlineColor,
         }}
       />
     </div>
@@ -305,6 +322,7 @@ function Blob({
   y,
   size,
   opacity = 0.4,
+  blurOverride,
 }: {
   cW: number;
   color: string;
@@ -312,7 +330,9 @@ function Blob({
   y: number;
   size: number;
   opacity?: number;
+  blurOverride?: number;
 }) {
+  const blurPx = blurOverride !== undefined ? blurOverride : cW * 0.06;
   return (
     <div
       style={{
@@ -323,7 +343,7 @@ function Blob({
         aspectRatio: "1 / 1",
         background: color,
         borderRadius: "50%",
-        filter: `blur(${cW * 0.06}px)`,
+        filter: `blur(${blurPx}px)`,
         opacity,
         pointerEvents: "none",
       }}
@@ -773,6 +793,15 @@ function SlideBackground({
   const showBlobs = !bgConfig?.hideBlobs;
   const overlayOpacity = bgConfig?.type === "image" ? (bgConfig.overlayOpacity ?? 0) : 0;
 
+  // Blob custom overrides
+  const blobColor1 = bgConfig?.blobColor || theme.accent;
+  const blobColor2 = bgConfig?.blobColor2 || bgConfig?.blobColor || theme.accent;
+  const blobScale = bgConfig?.blobScale ?? 1.0;
+  const customOpacity = bgConfig?.blobOpacity;
+  const op1 = customOpacity !== undefined ? customOpacity : inverted ? 0.25 : 0.32;
+  const op2 = customOpacity !== undefined ? customOpacity * 0.8 : inverted ? 0.18 : 0.25;
+  const blobBlur = bgConfig?.blobBlur;
+
   return (
     <div
       style={{
@@ -795,8 +824,24 @@ function SlideBackground({
       )}
       {showBlobs && (
         <>
-          <Blob cW={cW} color={theme.accent} x={-15} y={-10} size={55} opacity={inverted ? 0.25 : 0.32} />
-          <Blob cW={cW} color={theme.accent} x={70} y={75} size={45} opacity={inverted ? 0.18 : 0.25} />
+          <Blob
+            cW={cW}
+            color={blobColor1}
+            x={-15}
+            y={-10}
+            size={55 * blobScale}
+            opacity={op1}
+            blurOverride={blobBlur}
+          />
+          <Blob
+            cW={cW}
+            color={blobColor2}
+            x={70}
+            y={75}
+            size={45 * blobScale}
+            opacity={op2}
+            blurOverride={blobBlur}
+          />
         </>
       )}
     </div>

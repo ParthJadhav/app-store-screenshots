@@ -47,6 +47,7 @@ import type {
 import { BackgroundControls } from "./background-controls";
 import { ScreenshotPicker } from "./screenshot-picker";
 import { getCanvas, getElementTransform } from "./slide-canvas";
+import { TextStyleControls } from "./text-style-controls";
 
 type Props = {
   slide: Slide;
@@ -153,6 +154,12 @@ export function Inspector({
               onChange={(e) => setLocaleField("label", e.target.value)}
               placeholder={labelPlaceholder}
             />
+            <TextStyleControls
+              title="Label Font, Punto & Renk"
+              defaultColorLabel="Tema Accent"
+              styleConfig={slide.labelStyle}
+              onChange={(next) => onChange({ labelStyle: next })}
+            />
           </div>
         )}
 
@@ -166,6 +173,12 @@ export function Inspector({
             onChange={(e) => setLocaleField("headline", e.target.value)}
             rows={3}
             placeholder={headlinePlaceholder}
+          />
+          <TextStyleControls
+            title="Headline Font, Punto & Renk"
+            defaultColorLabel="Tema Önplan"
+            styleConfig={slide.headlineStyle}
+            onChange={(next) => onChange({ headlineStyle: next })}
           />
         </div>
 

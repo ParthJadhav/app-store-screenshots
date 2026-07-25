@@ -1,5 +1,12 @@
 # App Store & Google Play Screenshots Generator
 
+> [!NOTE]
+> **Fork & Credits**: This repository is maintained by [Deniz Tanyeli](https://github.com/deniztnyl) at [deniztnyl/app-store-template](https://github.com/deniztnyl/app-store-template). Special thanks to [Parth Jadhav](https://github.com/ParthJadhav) for creating and open-sourcing the original [app-store-screenshots](https://github.com/ParthJadhav/app-store-screenshots) project under the MIT License!
+>
+> **Added Features**:
+> - **Custom Background Editor**: Full support for custom gradient transitions (linear & radial with angle control), preset color palettes, solid colors, and uploading custom background images.
+> - **Global Background Propagation**: Apply custom background styles to all screens with one click.
+
 A skill for AI coding agents that scaffolds a production-ready Next.js editor for App Store and Google Play marketing screenshots. It gives you a connected canvas, real device frames, inspector controls, persistent project state, and one-click export bundles at store-ready sizes.
 
 ![Current connected-canvas editor showing a Bloom screenshot deck](example.png)
@@ -31,32 +38,44 @@ Example screenshots generated with this skill were accepted for [Bloom Coffee Sh
 
 Tip: when capturing source iPhone screenshots, the 6.1-inch simulator is usually the easiest starting point because it reduces manual image adjustment inside the frames.
 
-## Install
+## Install & Run
 
-### Using npx skills
+### Option 1: Quickstart Local Web App (Run Editor Directly)
 
 ```bash
-npx skills add ParthJadhav/app-store-screenshots
+git clone https://github.com/deniztnyl/app-store-template.git
+cd app-store-template
+npm install
+npm run dev
+```
+Then open `http://localhost:3000` in your browser.
+
+---
+
+### Option 2: Install as AI Agent Skill (`npx skills`)
+
+```bash
+npx skills add deniztnyl/app-store-template
 ```
 
 Install globally:
 
 ```bash
-npx skills add ParthJadhav/app-store-screenshots -g
+npx skills add deniztnyl/app-store-template -g
 ```
 
 Install for a specific agent:
 
 ```bash
-npx skills add ParthJadhav/app-store-screenshots -a claude-code
+npx skills add deniztnyl/app-store-template -a claude-code
 ```
 
 This works with Claude Code, Cursor, Windsurf, OpenCode, Codex, and other agents supported by [`skills`](https://github.com/vercel-labs/skills).
 
-### Manual install
+### Manual Agent Install
 
 ```bash
-git clone https://github.com/ParthJadhav/app-store-screenshots ~/.claude/skills/app-store-screenshots
+git clone https://github.com/deniztnyl/app-store-template.git ~/.claude/skills/app-store-screenshots
 ```
 
 ## Usage

@@ -241,13 +241,13 @@ export function ScreenshotEditor() {
           [prev.device]: (prev.slidesByDevice[prev.device] || []).map((slide) =>
             slide.id === slideId
               ? {
-                  ...slide,
-                  textElements: (slide.textElements || []).map((element) =>
-                    element.id === textId
-                      ? { ...element, text: writeLocalized(element.text, prev.locale, value) }
-                      : element,
-                  ),
-                }
+                ...slide,
+                textElements: (slide.textElements || []).map((element) =>
+                  element.id === textId
+                    ? { ...element, text: writeLocalized(element.text, prev.locale, value) }
+                    : element,
+                ),
+              }
               : slide,
           ),
         },
@@ -290,8 +290,8 @@ export function ScreenshotEditor() {
           headline: { ...src.headline },
           transforms: src.transforms
             ? Object.fromEntries(
-                Object.entries(src.transforms).map(([key, value]) => [key, { ...value }]),
-              )
+              Object.entries(src.transforms).map(([key, value]) => [key, { ...value }]),
+            )
             : undefined,
           textElements: src.textElements?.map((element) => ({
             ...element,
@@ -462,8 +462,15 @@ export function ScreenshotEditor() {
             const dataUrl = await captureSlide(el, cW, cH, size.w, size.h);
             const base64 = dataUrl.split(",")[1] || "";
             const filename = `${String(i + 1).padStart(2, "0")}-${slide.layout}.png`;
+
+            // Structured store-ready folder hierarchy
             const path = `${platform}/${state.device}/${size.w}x${size.h}/${locale}/${filename}`;
             zip.file(path, base64, { base64: true });
+
+            // Direct root folder for quick access
+            const rootPath = `Screenshots_${state.device}/${filename}`;
+            zip.file(rootPath, base64, { base64: true });
+
             okCount += 1;
           } catch (e) {
             failed += 1;
@@ -484,7 +491,7 @@ export function ScreenshotEditor() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${slugify(state.appName)}-${platform}-${state.device}-${stamp()}.zip`;
+        a.download = `${slugify(state.appName)}-${state.device}-screenshots.zip`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       } catch (e) {
