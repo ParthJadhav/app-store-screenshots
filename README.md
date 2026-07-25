@@ -38,32 +38,44 @@ Example screenshots generated with this skill were accepted for [Bloom Coffee Sh
 
 Tip: when capturing source iPhone screenshots, the 6.1-inch simulator is usually the easiest starting point because it reduces manual image adjustment inside the frames.
 
-## Install
+## Install & Run
 
-### Using npx skills
+### Option 1: Quickstart Local Web App (Run Editor Directly)
 
 ```bash
-npx skills add ParthJadhav/app-store-screenshots
+git clone https://github.com/deniztnyl/app-store-template.git
+cd app-store-template/skills/app-store-screenshots/template
+npm install
+npm run dev
+```
+Then open `http://localhost:3000` in your browser.
+
+---
+
+### Option 2: Install as AI Agent Skill (`npx skills`)
+
+```bash
+npx skills add deniztnyl/app-store-template
 ```
 
 Install globally:
 
 ```bash
-npx skills add ParthJadhav/app-store-screenshots -g
+npx skills add deniztnyl/app-store-template -g
 ```
 
 Install for a specific agent:
 
 ```bash
-npx skills add ParthJadhav/app-store-screenshots -a claude-code
+npx skills add deniztnyl/app-store-template -a claude-code
 ```
 
 This works with Claude Code, Cursor, Windsurf, OpenCode, Codex, and other agents supported by [`skills`](https://github.com/vercel-labs/skills).
 
-### Manual install
+### Manual Agent Install
 
 ```bash
-git clone https://github.com/ParthJadhav/app-store-screenshots ~/.claude/skills/app-store-screenshots
+git clone https://github.com/deniztnyl/app-store-template.git ~/.claude/skills/app-store-screenshots
 ```
 
 ## Usage
