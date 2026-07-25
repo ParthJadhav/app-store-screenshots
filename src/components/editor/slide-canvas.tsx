@@ -237,6 +237,21 @@ function Caption({
   // Scale typography off the *shorter* dimension so landscape layouts don't
   // produce headlines so tall they overlap the device frame.
   const unit = Math.min(cW, cH);
+
+  // Label style overrides
+  const lStyle = slide.labelStyle || {};
+  const labelColor = lStyle.color || accent;
+  const labelScale = lStyle.fontSizeScale ?? 1.0;
+  const labelWeight = lStyle.fontWeight ?? 600;
+  const labelFont = lStyle.fontFamily && lStyle.fontFamily !== "default" ? lStyle.fontFamily : undefined;
+
+  // Headline style overrides
+  const hStyle = slide.headlineStyle || {};
+  const headlineColor = hStyle.color || fg;
+  const headlineScale = hStyle.fontSizeScale ?? 1.0;
+  const headlineWeight = hStyle.fontWeight ?? 700;
+  const headlineFont = hStyle.fontFamily && hStyle.fontFamily !== "default" ? hStyle.fontFamily : undefined;
+
   return (
     <div style={{ textAlign: align, position: "relative", width: "100%" }}>
       <EditableText
@@ -246,10 +261,11 @@ function Caption({
         onFocus={onFocus}
         placeholder="LABEL"
         style={{
-          fontSize: unit * 0.028,
-          fontWeight: 600,
+          fontSize: unit * 0.028 * labelScale,
+          fontWeight: labelWeight,
+          fontFamily: labelFont,
           letterSpacing: unit * 0.0015,
-          color: accent,
+          color: labelColor,
           textTransform: "uppercase",
           marginBottom: unit * 0.018,
           minHeight: unit * 0.03,
@@ -263,11 +279,12 @@ function Caption({
         onFocus={onFocus}
         placeholder="Headline goes here"
         style={{
-          fontSize: unit * 0.092,
-          fontWeight: 700,
+          fontSize: unit * 0.092 * headlineScale,
+          fontWeight: headlineWeight,
+          fontFamily: headlineFont,
           lineHeight: 0.96,
           letterSpacing: -unit * 0.001,
-          color: fg,
+          color: headlineColor,
         }}
       />
     </div>

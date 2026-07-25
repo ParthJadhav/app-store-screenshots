@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "appName": "My App",
+  "appName": "Yiyorum",
   "themeId": "clean-light",
-  "connectedCanvas": false,
+  "connectedCanvas": true,
   "locales": [
     "en"
   ],
   "locale": "en",
-  "device": "iphone",
+  "device": "android",
   "orientation": "portrait",
   "appIcon": "",
   "slidesByDevice": {
@@ -188,60 +188,204 @@
     "android": [
       {
         "id": "s_ms003zi5_5",
-        "layout": "hero",
+        "layout": "device-bottom",
         "label": {
-          "en": "MEET YOUR APP"
+          "en": "Tarifler"
         },
         "headline": {
-          "en": "Sell one\nidea per slide."
+          "en": "Zengin Tarif Arşivi"
         },
-        "screenshot": ""
+        "screenshot": "/screenshots/uploaded/686111dfcc56becf.png",
+        "background": {
+          "type": "gradient",
+          "color1": "#ff4b1f",
+          "color2": "#ff9068",
+          "angle": 135,
+          "gradientType": "linear",
+          "color": "#1e293b",
+          "imageUrl": "",
+          "imageFit": "cover",
+          "overlayOpacity": 0,
+          "hideBlobs": false
+        },
+        "inverted": false,
+        "transforms": {
+          "device": {
+            "x": 200.70778097982713,
+            "y": 411.33371757925113,
+            "width": 678.5844380403457,
+            "height": 1470.266282420749,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        },
+        "labelStyle": {
+          "fontFamily": "'Outfit', sans-serif",
+          "color": "#5b7cfa"
+        }
       },
       {
         "id": "s_ms003zi5_6",
         "layout": "device-bottom",
         "label": {
-          "en": "FEATURE 01"
+          "en": "FAVORİLER"
         },
         "headline": {
-          "en": "Your headline\nlives here."
+          "en": "Favori Tariflerinizi\nKaydedin"
         },
-        "screenshot": ""
+        "screenshot": "/screenshots/uploaded/e8f15b23ee5c084e.png",
+        "transforms": {
+          "device": {
+            "x": 200.70778097982702,
+            "y": 411.33371757925113,
+            "width": 678.5844380403457,
+            "height": 1470.266282420749,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
       },
       {
         "id": "s_ms003zi5_7",
-        "layout": "two-devices",
+        "layout": "device-bottom",
         "label": {
-          "en": "FEATURE 02"
+          "en": "Planlayıcı"
         },
         "headline": {
-          "en": "Show two\nscreens at once."
+          "en": "Haftalık Yemek\nPlanı Oluşturun"
         },
-        "screenshot": "",
-        "screenshotSecondary": ""
+        "screenshot": "/screenshots/uploaded/048eabecf33d4649.png",
+        "transforms": {
+          "device": {
+            "x": 200.70778097982657,
+            "y": 411.33371757925113,
+            "width": 678.5844380403457,
+            "height": 1470.266282420749,
+            "rotation": 0,
+            "zIndex": 3
+          },
+          "caption": {
+            "x": 86.40000000000009,
+            "y": 153.6,
+            "width": 907.2,
+            "height": 537.6,
+            "rotation": 0,
+            "zIndex": 4
+          }
+        }
       },
       {
-        "id": "s_ms003zi5_8",
-        "layout": "device-top",
+        "id": "s_ms0cv7mt_i",
+        "layout": "device-bottom",
         "label": {
-          "en": "FEATURE 03"
+          "en": "Alışveriş LİSTESİ"
         },
         "headline": {
-          "en": "Flip the contrast\nfor visual rhythm."
+          "en": "Otomatik Akıllı \nAlışveriş Listesi"
         },
-        "screenshot": "",
-        "inverted": true
+        "screenshot": "/screenshots/uploaded/497990a912be5a9a.png",
+        "transforms": {
+          "device": {
+            "x": 200.70778097982748,
+            "y": 413.8207642113755,
+            "width": 678.5844380403457,
+            "height": 1470.266282420749,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
       },
       {
-        "id": "s_ms003zi5_9",
-        "layout": "no-device",
+        "id": "s_ms0cvt1f_j",
+        "layout": "device-bottom",
         "label": {
-          "en": "MORE"
+          "en": "KULLANIM"
         },
         "headline": {
-          "en": "And so\nmuch more."
+          "en": "Pratik Kullanım"
         },
-        "screenshot": ""
+        "screenshot": "/screenshots/uploaded/4b4a9cc69dbc5bdd.png",
+        "transforms": {
+          "device": {
+            "x": 200.70778097982748,
+            "y": 411.33371757925113,
+            "width": 678.5844380403457,
+            "height": 1470.266282420749,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "s_ms0d1m0l_k",
+        "layout": "device-bottom",
+        "label": {
+          "en": "HAZIRLAMA"
+        },
+        "headline": {
+          "en": "Tarifleri Kolayca\nHazırlayın"
+        },
+        "screenshot": "/screenshots/uploaded/7ba9548e7902a398.png",
+        "transforms": {
+          "device": {
+            "x": 200.70778097982748,
+            "y": 411.33371757925113,
+            "width": 678.5844380403457,
+            "height": 1470.266282420749,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "s_ms0d1mer_l",
+        "layout": "device-bottom",
+        "label": {
+          "en": "MALZEMELER"
+        },
+        "headline": {
+          "en": "Gereken Tüm\nMalzemeleri Görün"
+        },
+        "screenshot": "/screenshots/uploaded/bfd0ddb907aad851.png",
+        "transforms": {
+          "device": {
+            "x": 200.70778097982748,
+            "y": 411.33371757925113,
+            "width": 678.5844380403457,
+            "height": 1470.266282420749,
+            "rotation": 0,
+            "zIndex": 3
+          }
+        }
+      },
+      {
+        "id": "s_ms0d1mro_m",
+        "layout": "device-bottom",
+        "label": {
+          "en": "PLANLAMA"
+        },
+        "headline": {
+          "en": "Hemen \nPlana Ekleyin"
+        },
+        "screenshot": "/screenshots/uploaded/88052ad356ed8695.png",
+        "transforms": {
+          "device": {
+            "x": 200.70778097982748,
+            "y": 411.33371757925113,
+            "width": 678.5844380403457,
+            "height": 1470.266282420749,
+            "rotation": 0,
+            "zIndex": 3
+          },
+          "caption": {
+            "x": 86.39999999999964,
+            "y": 153.6,
+            "width": 907.2,
+            "height": 537.6,
+            "rotation": 0,
+            "zIndex": 4
+          }
+        }
       }
     ],
     "ipad": [
