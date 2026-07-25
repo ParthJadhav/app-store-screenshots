@@ -44,7 +44,7 @@ Tip: when capturing source iPhone screenshots, the 6.1-inch simulator is usually
 
 ```bash
 git clone https://github.com/deniztnyl/app-store-template.git
-cd app-store-template/skills/app-store-screenshots/template
+cd app-store-template
 npm install
 npm run dev
 ```

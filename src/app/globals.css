@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 14% 99%;
+    --foreground: 240 10% 10%;
+    --card: 240 14% 99%;
+    --card-foreground: 240 10% 10%;
+    --popover: 240 16% 99%;
+    --popover-foreground: 240 10% 10%;
+    --primary: 240 8% 12%;
+    --primary-foreground: 240 14% 98%;
+    --secondary: 240 9% 95%;
+    --secondary-foreground: 240 8% 14%;
+    --muted: 240 9% 95%;
+    --muted-foreground: 240 5% 32%;
+    --accent: 240 9% 94%;
+    --accent-foreground: 240 8% 14%;
+    --destructive: 0 78% 56%;
+    --destructive-foreground: 240 14% 98%;
+    --border: 240 9% 90%;
+    --input: 240 9% 90%;
+    --ring: 240 6% 62%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 240 12% 5%;
+    --foreground: 240 12% 96%;
+    --card: 240 12% 5%;
+    --card-foreground: 240 12% 96%;
+    --popover: 240 12% 6%;
+    --popover-foreground: 240 12% 96%;
+    --primary: 240 12% 96%;
+    --primary-foreground: 240 10% 10%;
+    --secondary: 240 8% 16%;
+    --secondary-foreground: 240 12% 96%;
+    --muted: 240 8% 14%;
+    --muted-foreground: 240 6% 75%;
+    --accent: 240 8% 16%;
+    --accent-foreground: 240 12% 96%;
+    --destructive: 0 70% 38%;
+    --destructive-foreground: 240 12% 96%;
+    --border: 240 8% 16%;
+    --input: 240 8% 16%;
+    --ring: 240 8% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  [contenteditable]:empty::before {
+    content: attr(data-placeholder);
+    opacity: 0.4;
+  }
+}
+
+/* react-rnd editable element hint: subtle outline + visible resize handles on hover */
+.rnd-editable {
+  cursor: move;
+  outline: 2px dashed transparent;
+  outline-offset: 4px;
+  transition: outline-color 120ms ease;
+}
+.rnd-editable:hover {
+  outline-color: rgba(91, 124, 250, 0.55);
+}
+.rnd-editable:focus-within,
+.rnd-editable.rnd-selected {
+  outline-color: rgba(91, 124, 250, 0.9);
+  outline-style: solid;
+}
+
+.rnd-rotate-handle {
+  position: absolute;
+  right: -14px;
+  top: -14px;
+  z-index: 20;
+  display: flex;
+  height: 28px;
+  width: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(91, 124, 250, 0.65);
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(30, 41, 59, 0.92);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.2);
+  cursor: grab;
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.rnd-editable:hover .rnd-rotate-handle,
+.rnd-editable.rnd-selected .rnd-rotate-handle,
+.rnd-rotate-handle:focus-visible {
+  opacity: 1;
+}
+
+.rnd-rotate-handle:hover,
+.rnd-rotate-handle:focus-visible {
+  transform: scale(1.05);
+}
+
+.rnd-rotate-handle:active {
+  cursor: grabbing;
+}
+
+/* Show a visible cursor outline on contenteditable text inside Rnd while focused. */
+.rnd-editable [contenteditable]:focus {
+  box-shadow: 0 0 0 2px rgba(91, 124, 250, 0.45);
+  border-radius: 2px;
+}
