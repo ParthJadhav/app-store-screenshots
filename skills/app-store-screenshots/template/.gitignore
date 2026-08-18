@@ -5,3 +5,7 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+
+# User-uploaded screenshots land here at runtime. They are the user's assets,
+# not template content, and must never be committed back into the template.
+public/screenshots/uploaded/

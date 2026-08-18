@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { rejectCrossSiteWrite } from "@/lib/request-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  // This route OVERWRITES a git-tracked file. See lib/request-guard.ts.
+  const blocked = rejectCrossSiteWrite(req);
+  if (blocked) {
+    return NextResponse.json({ ok: false, error: blocked.error }, { status: blocked.status });
+  }
   let body: unknown;
   try {
     body = await req.json();
