@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""
+verify-export — catch silently dropped screenshots in an export bundle.
+
+WHY THIS EXISTS
+---------------
+The exporter intermittently produces a slide with the device frame, headline and
+background rendered perfectly and the SCREENSHOT INSIDE THE DEVICE MISSING. It
+does not error, and the on-canvas editor preview is always correct because that
+is ordinary DOM rendering and never touches the export path.
+
+Observed 18 Aug 2026 across repeated exports of one five-slide deck:
+  - a different slide failed on each run
+  - the SAME slide dropped at 3840x2160 while rendering correctly at 1920x1080
+    in the SAME run, which rules out the source image and the layout
+Root cause is not established. Treat every export as suspect.
+
+WHAT THIS DOES
+--------------
+1. Counts unique colours per exported PNG. A dropped screenshot collapses a
+   device region full of album art into a flat dark rectangle, which costs tens
+   of thousands of colours. The split is not subtle -- measured examples:
+       dropped: 3,609 / 4,157 / 4,357
+       intact:  31,787 ... 292,699
+   Files are compared against their same-size siblings, not a fixed threshold.
+2. Writes one contact sheet per size, so "look at every slide" is one glance
+   instead of ten file-opens. THE SHEET IS THE POINT -- a missing screenshot is
+   unmissable beside its populated siblings and easy to miss one file at a time.
+
+DO NOT REPLACE THE VISUAL CHECK WITH A NUMBER. Two automated detectors were
+tried during that session -- mean brightness, then colourfulness -- and BOTH
+gave false readings in both directions: a dark lyrics slide read as "empty", a
+purple gradient background read as "has content". One of them passed a broken
+file. The colour count here is a triage aid to tell you where to look. Look.
+
+USAGE
+    verify-export <export-dir>
+        e.g. verify-export ~/Claude/Streamphile/screenshots-deck/export
+
+CONTACT SHEETS ARE DERIVED AND DELIBERATELY NOT TRACKED. They are regenerated
+on every run. Never read a sheet you did not just generate: a sheet left over
+from an earlier export will happily show a good slide next to a file that has
+since been re-exported and broken, which is worse than having no sheet at all.
+If you are looking at a sheet, re-run this first.
+
+Exits non-zero if any file looks dropped.
+"""
+import sys
+import pathlib
+from collections import defaultdict
+
+try:
+    from PIL import Image
+except ImportError:
+    sys.exit("Pillow required:  pip install pillow")
+
+# A file is suspect when its colour count falls this far below the median of its
+# same-size siblings. Ratio-based, so it adapts to decks of any visual density.
+SUSPECT_RATIO = 0.15
+# Floor for a lone file with no siblings to compare against.
+ABSOLUTE_FLOOR = 15000
+# Contact sheets are written here, and excluded from scanning.
+SHEET_DIR = "_contact-sheets"
+
+
+def unique_colours(path):
+    im = Image.open(path).convert("RGB")
+    return len(im.getcolors(maxcolors=4_000_000) or [])
+
+
+def main():
+    if len(sys.argv) != 2:
+        sys.exit(__doc__.strip().split("USAGE")[-1].strip())
+
+    root = pathlib.Path(sys.argv[1]).expanduser()
+    if not root.is_dir():
+        sys.exit(f"not a directory: {root}")
+
+    # Skip our own contact sheets, or a second run scans its own output and
+    # reports the sheets as a bogus extra "size" group.
+    pngs = sorted(
+        f for f in root.rglob("*.png")
+        if SHEET_DIR not in f.parts and not f.name.startswith("contact-sheet-")
+    )
+    if not pngs:
+        sys.exit(f"no PNGs under {root}")
+
+    # Group by parent directory — one group per size/locale.
+    groups = defaultdict(list)
+    for p in pngs:
+        groups[p.parent].append(p)
+
+    suspect = []
+    for parent in sorted(groups):
+        files = sorted(groups[parent])
+        counts = {f: unique_colours(f) for f in files}
+        ordered = sorted(counts.values())
+        median = ordered[len(ordered) // 2]
+        rel = parent.relative_to(root)
+        print(f"--- {rel}  ({len(files)} files, median {median:,} colours)")
+        for f in files:
+            n = counts[f]
+            bad = n < ABSOLUTE_FLOOR and n < median * SUSPECT_RATIO
+            if bad:
+                suspect.append(f)
+            print(f"    {f.name:30s} {n:9,}  {'** LOOKS DROPPED **' if bad else 'ok'}")
+
+        # Contact sheet for this group.
+        w, h = 560, 315
+        sheet = Image.new("RGB", (w, h * len(files)), (18, 18, 18))
+        for i, f in enumerate(files):
+            sheet.paste(Image.open(f).convert("RGB").resize((w, h)), (0, i * h))
+        sheet_dir = root / SHEET_DIR
+        sheet_dir.mkdir(exist_ok=True)
+        out = sheet_dir / f"{str(rel).replace('/', '-')}.png"
+        sheet.save(out)
+        print(f"    -> contact sheet: {out}")
+        print()
+
+    if suspect:
+        print(f"{len(suspect)} file(s) look dropped — re-export and re-check:")
+        for f in suspect:
+            print(f"  {f}")
+        print("\nRe-exporting reshuffles which slide fails, so assemble the deck")
+        print("from whichever renders come out clean across runs.")
+        return 1
+
+    print("No dropped screenshots detected.")
+    print("NOW OPEN THE CONTACT SHEETS AND LOOK. The count is triage, not proof.")
+    print("(Sheets were just regenerated. Never read one you did not just make —")
+    print(" a stale sheet can show a good slide for a file that has since broken.)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

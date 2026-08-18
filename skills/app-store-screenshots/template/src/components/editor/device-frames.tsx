@@ -295,3 +295,103 @@ function EmptySlot() {
     </div>
   );
 }
+
+// ---------- Apple TV ----------
+// The screenshot IS the content, so there is no device UI to draw. A thin dark
+// bezel reads as "TV" without competing with the capture. `bare` renders the
+// capture edge-to-edge with no bezel at all.
+export function AppleTV({ src, alt = "", style, hideEmpty, bare }: FrameProps & { bare?: boolean }) {
+  const resolved = img(src);
+  return (
+    <div style={{ position: "relative", aspectRatio: "16 / 9", ...style }}>
+      <div
+        style={{
+          width: "100%", height: "100%",
+          borderRadius: bare ? "0.6% / 1.1%" : "1.1% / 2.0%",
+          background: bare ? "transparent" : "#0A0A0C",
+          padding: bare ? "0" : "0.9%",
+          boxSizing: "border-box",
+          boxShadow: bare
+            ? "0 18px 60px rgba(0,0,0,0.28)"
+            : "0 22px 70px rgba(0,0,0,0.40), inset 0 0 0 1px rgba(255,255,255,0.06)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ width: "100%", height: "100%", overflow: "hidden", background: "#111",
+                      borderRadius: bare ? "0.6% / 1.1%" : "0.5% / 0.9%" }}>
+          {resolved ? (
+            <img src={resolved} alt={alt} draggable={false}
+                 style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
+          ) : hideEmpty ? null : (<EmptySlot />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Apple Watch ----------
+// Cushion-shaped body with a very large corner radius, plus the digital crown and
+// side button on the right. The bezel is proportionally much thicker than a phone's,
+// which is what makes a watch read as a watch at small sizes.
+export function AppleWatch({ src, alt = "", style, hideEmpty }: FrameProps) {
+  const resolved = img(src);
+  return (
+    <div style={{ position: "relative", aspectRatio: "422 / 514", ...style }}>
+      {/* crown + side button */}
+      <div style={{ position: "absolute", right: "-2.6%", top: "27%", width: "3.4%", height: "12%",
+                    background: "linear-gradient(180deg,#8E8E93,#5A5A5E)", borderRadius: "40%" }} />
+      <div style={{ position: "absolute", right: "-1.8%", top: "45%", width: "2.4%", height: "14%",
+                    background: "linear-gradient(180deg,#6E6E73,#48484A)", borderRadius: "40%" }} />
+      <div
+        style={{
+          width: "100%", height: "100%",
+          borderRadius: "26% / 21%",
+          background: "#0A0A0C",
+          padding: "6.5%",
+          boxSizing: "border-box",
+          boxShadow: "0 18px 50px rgba(0,0,0,0.42), inset 0 0 0 1px rgba(255,255,255,0.08)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ width: "100%", height: "100%", overflow: "hidden", background: "#000",
+                      borderRadius: "22% / 18%" }}>
+          {resolved ? (
+            <img src={resolved} alt={alt} draggable={false}
+                 style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
+          ) : hideEmpty ? null : (<EmptySlot />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- CarPlay ----------
+// A dashboard head unit: wide, squared-off, minimal bezel. Deliberately plainer than
+// the TV frame because CarPlay screens are set into a fascia rather than being a
+// product silhouette anyone recognises.
+export function CarPlayScreen({ src, alt = "", style, hideEmpty }: FrameProps) {
+  const resolved = img(src);
+  return (
+    <div style={{ position: "relative", aspectRatio: "800 / 480", ...style }}>
+      <div
+        style={{
+          width: "100%", height: "100%",
+          borderRadius: "2.2% / 3.6%",
+          background: "#0B0B0D",
+          padding: "1.6%",
+          boxSizing: "border-box",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.40), inset 0 0 0 1px rgba(255,255,255,0.07)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ width: "100%", height: "100%", overflow: "hidden", background: "#000",
+                      borderRadius: "1.4% / 2.3%" }}>
+          {resolved ? (
+            <img src={resolved} alt={alt} draggable={false}
+                 style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
+          ) : hideEmpty ? null : (<EmptySlot />)}
+        </div>
+      </div>
+    </div>
+  );
+}

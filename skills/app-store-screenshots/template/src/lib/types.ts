@@ -1,6 +1,9 @@
 export type Device =
   | "iphone"
   | "ipad"
+  | "tvos"
+  | "watchos"
+  | "carplay"
   | "android"
   | "android-7"
   | "android-10"
