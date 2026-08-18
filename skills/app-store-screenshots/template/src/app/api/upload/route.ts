@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { rejectCrossSiteWrite, sniffImageType } from "@/lib/request-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,11 @@ function parseDataUrl(dataUrl: string): { mime: string; bytes: Buffer } | null {
 }
 
 export async function POST(req: Request) {
+  // This route WRITES A FILE to disk. See lib/request-guard.ts.
+  const blocked = rejectCrossSiteWrite(req);
+  if (blocked) {
+    return NextResponse.json({ ok: false, error: blocked.error }, { status: blocked.status });
+  }
   let body: { dataUrl?: string };
   try {
     body = (await req.json()) as { dataUrl?: string };
@@ -40,6 +46,15 @@ export async function POST(req: Request) {
   if (!ext) {
     return NextResponse.json(
       { ok: false, error: `Unsupported mime: ${parsed.mime}` },
+      { status: 400 },
+    );
+  }
+  // The declared MIME comes from the caller-written data URL, so it decides
+  // the stored extension. Require the bytes to actually be that image type.
+  const sniffed = sniffImageType(parsed.bytes);
+  if (!sniffed || MIME_EXT[sniffed] !== ext) {
+    return NextResponse.json(
+      { ok: false, error: "Content does not match declared image type" },
       { status: 400 },
     );
   }
