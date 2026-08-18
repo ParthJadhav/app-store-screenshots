@@ -15,19 +15,28 @@ import type {
 } from "@/lib/types";
 import {
   CANVAS,
+  CARPLAY_RATIO,
   IPAD_RATIO,
   MK_RATIO,
+  TV_RATIO,
+  WATCH_RATIO,
+  carPlayW,
   ipadW,
   phoneW,
   phoneWSmall,
   tabletLW,
   tabletPW,
+  tvW,
+  watchW,
 } from "@/lib/constants";
 import { toTextElementId } from "@/lib/elements";
 import { img } from "@/lib/image-cache";
 import { pickText, resolveScreenshot } from "@/lib/locale";
 import {
   AndroidPhone,
+  AppleTV,
+  AppleWatch,
+  CarPlayScreen,
   AndroidTabletL,
   AndroidTabletP,
   IPad,
@@ -55,6 +64,9 @@ function getFrameAspect(device: Device, orientation: Orientation) {
     case "iphone":      return MK_RATIO;
     case "android":     return 9 / 19.5;
     case "ipad":        return IPAD_RATIO;
+    case "tvos":        return TV_RATIO;
+    case "watchos":     return WATCH_RATIO;
+    case "carplay":     return CARPLAY_RATIO;
     case "android-7":
     case "android-10":  return orientation === "landscape" ? 8 / 5 : 5 / 8;
     default:            return 1;
@@ -71,6 +83,12 @@ export function getFrameForDevice(device: Device, orientation: Orientation): {
       return { Comp: Phone, widthFn: phoneW, smallWidthFn: phoneWSmall };
     case "ipad":
       return { Comp: IPad, widthFn: ipadW, smallWidthFn: (cW, cH) => ipadW(cW, cH, 0.6) };
+    case "tvos":
+      return { Comp: AppleTV, widthFn: tvW, smallWidthFn: (cW, cH) => tvW(cW, cH, 0.56) };
+    case "watchos":
+      return { Comp: AppleWatch, widthFn: watchW, smallWidthFn: (cW, cH) => watchW(cW, cH, 0.42) };
+    case "carplay":
+      return { Comp: CarPlayScreen, widthFn: carPlayW, smallWidthFn: (cW, cH) => carPlayW(cW, cH, 0.7) };
     case "android":
       return { Comp: AndroidPhone, widthFn: phoneW, smallWidthFn: phoneWSmall };
     case "android-7":
@@ -346,6 +364,11 @@ function getDefaultRects(
   frameAspect: number,
   fwFrac: number,
   fwSmallFrac: number,
+  // Phones and tablets are deliberately hung past the canvas edge so they bleed off
+  // it. A landscape device must not be cropped - a clipped television or head unit
+  // reads as a mistake, not a design. When true, every device rect stays fully
+  // inside the canvas.
+  contain = false,
 ): LayoutRects {
   const deviceW = fwFrac * cW;
   const deviceH = deviceW / frameAspect;
@@ -360,7 +383,7 @@ function getDefaultRects(
         caption: { x: cW * 0.08, y: cH * 0.09, width: capW, height: capH, align: "center" },
         device: {
           x: (cW - deviceW) / 2,
-          y: cH - deviceH + deviceH * 0.15,
+          y: contain ? cH - deviceH - cH * 0.05 : cH - deviceH + deviceH * 0.15,
           width: deviceW,
           height: deviceH,
         },
@@ -380,7 +403,7 @@ function getDefaultRects(
         caption: { x: cW * 0.08, y: cH * 0.65, width: capW, height: capH, align: "center" },
         device: {
           x: (cW - deviceW) / 2,
-          y: -cH * 0.1,
+          y: contain ? cH * 0.05 : -cH * 0.1,
           width: deviceW,
           height: deviceH,
         },
@@ -389,14 +412,14 @@ function getDefaultRects(
       return {
         caption: { x: cW * 0.08, y: cH * 0.08, width: capW, height: capH, align: "center" },
         deviceSecondary: {
-          x: -cW * 0.06,
+          x: contain ? cW * 0.04 : -cW * 0.06,
           y: cH - smallH - cH * 0.05,
           width: smallW,
           height: smallH,
         },
         device: {
-          x: cW - deviceW * 0.9 + cW * 0.06,
-          y: cH - deviceH * 0.9 - cH * 0.02,
+          x: contain ? cW - deviceW * 0.9 - cW * 0.04 : cW - deviceW * 0.9 + cW * 0.06,
+          y: contain ? cH - (deviceW * 0.9) / frameAspect - cH * 0.05 : cH - deviceH * 0.9 - cH * 0.02,
           width: deviceW * 0.9,
           height: (deviceW * 0.9) / frameAspect,
         },
@@ -421,7 +444,7 @@ function getDefaultRects(
           align: "left",
         },
         device: {
-          x: cW - deviceW + cW * 0.03,
+          x: contain ? cW - deviceW - cW * 0.04 : cW - deviceW + cW * 0.03,
           y: (cH - deviceH) / 2,
           width: deviceW,
           height: deviceH,
@@ -456,7 +479,10 @@ function getSlideGeometry(slide: Slide, device: Device, orientation: Orientation
   const frameAspect = getFrameAspect(device, orientation);
   const fwFrac = widthFn(cW, cH);
   const fwSmallFrac = smallWidthFn(cW, cH);
-  const defaults = getDefaultRects(slide.layout, cW, cH, frameAspect, fwFrac, fwSmallFrac);
+  const defaults = getDefaultRects(
+    slide.layout, cW, cH, frameAspect, fwFrac, fwSmallFrac,
+    device === "tvos" || device === "carplay",
+  );
   return { cW, cH, Frame, frameAspect, defaults };
 }
 

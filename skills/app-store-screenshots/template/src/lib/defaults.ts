@@ -121,6 +121,9 @@ export const DEFAULT_PROJECT: ProjectState = {
     iphone: makeStarterSlides(),
     android: makeStarterSlides(),
     ipad: ipadStarter(),
+    tvos: makeStarterSlides(),
+    watchos: makeStarterSlides(),
+    carplay: makeStarterSlides(),
     "android-7": tabletStarter("7"),
     "android-10": tabletStarter("10"),
     "feature-graphic": fgStarter(),
@@ -137,6 +140,10 @@ export function newSlide(layout: Slide["layout"] = "device-bottom"): Slide {
   };
 }
 
+const IOS_DEVICES: ReadonlySet<Device> = new Set<Device>([
+  "iphone", "ipad", "tvos", "watchos", "carplay",
+]);
+
 export function detectPlatform(device: Device): "ios" | "android" {
-  return device === "iphone" || device === "ipad" ? "ios" : "android";
+  return IOS_DEVICES.has(device) ? "ios" : "android";
 }

@@ -129,6 +129,9 @@ export function Toolbar(props: Props) {
             <>
               <SelectItem value="iphone">{DEVICE_LABEL.iphone}</SelectItem>
               <SelectItem value="ipad">{DEVICE_LABEL.ipad}</SelectItem>
+              <SelectItem value="tvos">{DEVICE_LABEL.tvos}</SelectItem>
+              <SelectItem value="watchos">{DEVICE_LABEL.watchos}</SelectItem>
+              <SelectItem value="carplay">{DEVICE_LABEL.carplay}</SelectItem>
             </>
           ) : (
             <>
