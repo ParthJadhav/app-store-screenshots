@@ -32,7 +32,8 @@ export type ElementTransform = {
 
 export type BuiltInElementId = "caption" | "device" | "deviceSecondary";
 export type TextElementId = `text:${string}`;
-export type ElementId = BuiltInElementId | TextElementId;
+export type ImageElementId = `image:${string}`;
+export type ElementId = BuiltInElementId | TextElementId | ImageElementId;
 
 export type SelectedElement = {
   slideId: string;
@@ -55,6 +56,17 @@ export type TextElement = {
   align?: "left" | "center" | "right";
 };
 
+export type ImageElement = {
+  id: string;
+  src: string;
+  transform: ElementTransform;
+  fit?: "cover" | "contain";
+  fade?: {
+    edge: "top" | "bottom" | "left" | "right";
+    amount: number;
+  };
+};
+
 export type Slide = {
   id: string;
   layout: SlideLayout;
@@ -63,9 +75,11 @@ export type Slide = {
   screenshot: string;         // path under /screenshots/ — may contain {locale}
   screenshotSecondary?: string; // for two-devices layout — may contain {locale}
   inverted?: boolean;         // dark background variant
+  backgroundColor?: string;   // per-slide hex color override
   // Per-element overrides; when present, replaces layout default placement.
   transforms?: Partial<Record<BuiltInElementId, ElementTransform>>;
   textElements?: TextElement[];
+  imageElements?: ImageElement[];
 };
 
 export type ThemeId =
@@ -74,6 +88,24 @@ export type ThemeId =
   | "warm-editorial"
   | "ocean-fresh"
   | "bloom-roast";
+
+export type ScreenshotFontId =
+  | "template-serif"
+  | "system-sans"
+  | "classic-serif"
+  | "avenir-next"
+  | "helvetica-neue"
+  | "american-typewriter"
+  | "baskerville"
+  | "optima"
+  | "palatino"
+  | "futura"
+  | "self-hosted";
+
+export type ImportedFont = {
+  src: string;
+  format: "woff2" | "woff" | "truetype" | "opentype";
+};
 
 export type Theme = {
   id: string;
@@ -90,6 +122,8 @@ export type ProjectState = {
   schemaVersion?: number;
   appName: string;
   themeId: string;
+  fontId?: ScreenshotFontId;
+  importedFont?: ImportedFont;
   // v1 projects render as isolated screens until the user opts into connected crops.
   connectedCanvas: boolean;
   // Locales this project targets. Drives the toolbar dropdown and bulk export.

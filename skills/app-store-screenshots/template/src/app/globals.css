@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "CustomScreenshotFont";
+  src:
+    url("/fonts/imported/custom-screenshot-font.woff2") format("woff2"),
+    url("/fonts/imported/custom-screenshot-font.woff") format("woff"),
+    url("/fonts/imported/custom-screenshot-font.ttf") format("truetype"),
+    url("/fonts/imported/custom-screenshot-font.otf") format("opentype");
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --background: 240 14% 99%;

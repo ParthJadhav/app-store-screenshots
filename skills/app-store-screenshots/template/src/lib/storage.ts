@@ -1,11 +1,13 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PROJECT_SCHEMA_VERSION, STORAGE_KEY } from "./constants";
+import { DEFAULT_SCREENSHOT_FONT_ID, PROJECT_SCHEMA_VERSION, SCREENSHOT_FONTS, STORAGE_KEY } from "./constants";
+import { cleanHexColor } from "./clean-hex-color";
+import { cleanImportedFont } from "./clean-imported-font";
 import { DEFAULT_PROJECT } from "./defaults";
 import { coerceLocalized } from "./locale";
-import type { Device, ElementTransform, ProjectState, Slide, TextElement } from "./types";
+import type { Device, ElementTransform, ImageElement, ProjectState, Slide, TextElement } from "./types";
 
-const HISTORY_LIMIT = 50;
+const HISTORY_LIMIT = 25;
 // Coalesce rapid edits (typing, slider drags) into a single undo step.
 const COALESCE_MS = 500;
 // Debounce file/localStorage writes — frequent enough to feel instant, infrequent enough not to thrash disk.
@@ -53,9 +55,36 @@ function cleanTextElement(value: unknown): TextElement | undefined {
   };
 }
 
+function cleanImageElement(value: unknown): ImageElement | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Partial<ImageElement>;
+  if (typeof raw.id !== "string" || !raw.id.trim() || typeof raw.src !== "string") return undefined;
+  const transform = cleanTransform(raw.transform);
+  if (!transform) return undefined;
+  return {
+    id: raw.id,
+    src: raw.src,
+    transform,
+    ...(raw.fit === "cover" || raw.fit === "contain" ? { fit: raw.fit } : {}),
+    ...(raw.fade &&
+    typeof raw.fade === "object" &&
+    ["top", "bottom", "left", "right"].includes(raw.fade.edge as string) &&
+    typeof raw.fade.amount === "number" &&
+    Number.isFinite(raw.fade.amount)
+      ? {
+          fade: {
+            edge: raw.fade.edge,
+            amount: Math.max(0, Math.min(100, raw.fade.amount)),
+          },
+        }
+      : {}),
+  };
+}
+
 // Migrate older projects into the current schema while keeping legacy decks
 // visually stable until they explicitly opt into connected canvas.
 function migrateSlide(slide: Slide): Slide {
+  const backgroundColor = cleanHexColor(slide.backgroundColor);
   const transforms = slide.transforms
     ? Object.fromEntries(
         Object.entries(slide.transforms)
@@ -66,13 +95,18 @@ function migrateSlide(slide: Slide): Slide {
   const textElements = Array.isArray(slide.textElements)
     ? slide.textElements.map(cleanTextElement).filter((t): t is TextElement => !!t)
     : undefined;
+  const imageElements = Array.isArray(slide.imageElements)
+    ? slide.imageElements.map(cleanImageElement).filter((image): image is ImageElement => !!image)
+    : undefined;
 
   return {
     ...slide,
     label: coerceLocalized(slide.label as unknown),
     headline: coerceLocalized(slide.headline as unknown),
+    ...(backgroundColor ? { backgroundColor } : { backgroundColor: undefined }),
     ...(transforms && Object.keys(transforms).length > 0 ? { transforms } : { transforms: undefined }),
     ...(textElements && textElements.length > 0 ? { textElements } : { textElements: undefined }),
+    ...(imageElements && imageElements.length > 0 ? { imageElements } : { imageElements: undefined }),
   };
 }
 
@@ -85,6 +119,10 @@ function mergeWithDefaults(parsed: Partial<ProjectState>): ProjectState {
     typeof parsed.themeId === "string" && parsed.themeId.trim()
       ? parsed.themeId
       : DEFAULT_PROJECT.themeId;
+  const fontId = parsed.fontId && parsed.fontId in SCREENSHOT_FONTS
+    ? parsed.fontId
+    : DEFAULT_SCREENSHOT_FONT_ID;
+  const importedFont = cleanImportedFont(parsed.importedFont);
   const slidesByDevice = parsed.slidesByDevice
     ? Object.fromEntries(
         Object.entries(parsed.slidesByDevice).map(([device, slides]) => [
@@ -98,6 +136,8 @@ function mergeWithDefaults(parsed: Partial<ProjectState>): ProjectState {
     ...parsed,
     schemaVersion: PROJECT_SCHEMA_VERSION,
     themeId,
+    fontId,
+    ...(importedFont ? { importedFont } : { importedFont: undefined }),
     connectedCanvas,
     slidesByDevice: {
       ...DEFAULT_PROJECT.slidesByDevice,
@@ -311,5 +351,7 @@ export function useProject() {
     resetDevice,
     undo,
     redo,
+    canUndo: pastRef.current.length > 0,
+    canRedo: futureRef.current.length > 0,
   };
 }
