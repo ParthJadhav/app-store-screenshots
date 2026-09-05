@@ -1,4 +1,4 @@
-import type { Device, Orientation, SlideLayout, Theme, ThemeId } from "./types";
+import type { Device, Orientation, ScreenshotFontId, SlideLayout, Theme, ThemeId } from "./types";
 
 // ---------- Canvas dimensions (design at largest required resolution) ----------
 export const CANVAS: Record<Device, { w: number; h: number; wL?: number; hL?: number }> = {
@@ -82,6 +82,34 @@ export function ipadW(cW: number, cH: number, clamp = 0.75) {
 
 // ---------- Themes ----------
 export const DEFAULT_THEME_ID: ThemeId = "clean-light";
+
+export const DEFAULT_SCREENSHOT_FONT_ID: ScreenshotFontId = "system-sans";
+
+export const SCREENSHOT_FONTS: Record<ScreenshotFontId, { name: string; family: string }> = {
+  "template-serif": {
+    name: "Editorial Serif",
+    family: "Georgia, 'Times New Roman', serif",
+  },
+  "system-sans": {
+    name: "Modern Sans",
+    family: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+  },
+  "classic-serif": {
+    name: "Classic Serif",
+    family: "Georgia, 'Times New Roman', serif",
+  },
+  "avenir-next": { name: "Avenir Next", family: '"Avenir Next", Avenir, sans-serif' },
+  "helvetica-neue": { name: "Helvetica Neue", family: '"Helvetica Neue", Helvetica, Arial, sans-serif' },
+  "american-typewriter": { name: "American Typewriter", family: '"American Typewriter", Georgia, serif' },
+  "baskerville": { name: "Baskerville", family: "Baskerville, Georgia, serif" },
+  "optima": { name: "Optima", family: "Optima, 'Palatino Linotype', serif" },
+  "palatino": { name: "Palatino", family: "Palatino, 'Palatino Linotype', serif" },
+  "futura": { name: "Futura", family: "Futura, 'Trebuchet MS', sans-serif" },
+  "self-hosted": {
+    name: "Import a font",
+    family: '"CustomScreenshotFont", Georgia, serif',
+  },
+};
 
 export const THEMES: Record<string, Theme> = {
   "clean-light": {

@@ -6,11 +6,12 @@ import { Toaster, toast } from "sonner";
 import {
   getExportSizes,
   hasTheme,
+  SCREENSHOT_FONTS,
   supportsLandscape,
   themeById,
 } from "@/lib/constants";
 import { detectPlatform, nid } from "@/lib/defaults";
-import { isBuiltInElementId, isTextElementId, textElementKey } from "@/lib/elements";
+import { imageElementKey, isBuiltInElementId, isImageElementId, isTextElementId, textElementKey } from "@/lib/elements";
 import { preloadImages } from "@/lib/image-cache";
 import { resolveScreenshot, writeLocalized } from "@/lib/locale";
 import { useProject } from "@/lib/storage";
@@ -19,6 +20,7 @@ import type {
   Device,
   ElementId,
   ElementTransform,
+  ImageElement,
   SelectedElement,
   Slide,
 } from "@/lib/types";
@@ -29,7 +31,7 @@ import { DeckCanvas, getCanvas } from "./slide-canvas";
 import { Toolbar } from "./toolbar";
 
 export function ScreenshotEditor() {
-  const { state, setState, hydrated, savedAt, saveError, reset, resetDevice, undo, redo } = useProject();
+  const { state, setState, hydrated, savedAt, saveError, reset, resetDevice, undo, redo, canUndo, canRedo } = useProject();
   const [activeSlideId, setActiveSlideId] = React.useState<string | null>(null);
   const [selectedElement, setSelectedElement] = React.useState<SelectedElement | null>(null);
   const [exporting, setExporting] = React.useState<string | null>(null);
@@ -42,6 +44,12 @@ export function ScreenshotEditor() {
   const activeSlide =
     currentSlides.find((s) => s.id === activeSlideId) || currentSlides[0] || null;
   const theme = themeById(state.themeId);
+  const fontFamily = state.fontId === "self-hosted" && state.importedFont
+    ? '"ImportedScreenshotFont", Georgia, serif'
+    : SCREENSHOT_FONTS[state.fontId || "system-sans"].family;
+  const fontFaceCss = state.importedFont
+    ? `@font-face { font-family: "ImportedScreenshotFont"; src: url("${state.importedFont.src}") format("${state.importedFont.format}"); font-display: swap; }`
+    : undefined;
 
   React.useEffect(() => {
     if (selectedElement && selectedElement.slideId !== activeSlide?.id) {
@@ -85,6 +93,9 @@ export function ScreenshotEditor() {
         } else {
           paths.add(raw);
         }
+      }
+      for (const imageElement of s.imageElements || []) {
+        if (imageElement.src && !imageElement.src.startsWith("data:")) paths.add(imageElement.src);
       }
     }
     return Array.from(paths).sort();
@@ -216,6 +227,15 @@ export function ScreenshotEditor() {
                 ),
               };
             }
+            if (isImageElementId(elementId)) {
+              const imageId = imageElementKey(elementId);
+              return {
+                ...slide,
+                imageElements: (slide.imageElements || []).map((element) =>
+                  element.id === imageId ? { ...element, transform } : element,
+                ),
+              };
+            }
             if (!isBuiltInElementId(elementId)) return slide;
             return {
               ...slide,
@@ -278,6 +298,11 @@ export function ScreenshotEditor() {
             ...element,
             id: nid(),
             text: { ...element.text },
+            transform: { ...element.transform },
+          })),
+          imageElements: src.imageElements?.map((element): ImageElement => ({
+            ...element,
+            id: nid(),
             transform: { ...element.transform },
           })),
         };
@@ -558,6 +583,12 @@ export function ScreenshotEditor() {
         setAppName={(v) => setState((p) => ({ ...p, appName: v }))}
         connectedCanvas={state.connectedCanvas}
         setConnectedCanvas={(v) => setState((p) => ({ ...p, connectedCanvas: v }))}
+        themeId={state.themeId}
+        setThemeId={(v) => setState((p) => ({ ...p, themeId: v }))}
+        fontId={state.fontId || "system-sans"}
+        setFontId={(v) => setState((p) => ({ ...p, fontId: v }))}
+        importedFont={state.importedFont}
+        setImportedFont={(importedFont) => setState((p) => ({ ...p, fontId: "self-hosted", importedFont }))}
         locale={state.locale}
         setLocale={(v) => setState((p) => ({ ...p, locale: v }))}
         locales={state.locales}
@@ -576,6 +607,10 @@ export function ScreenshotEditor() {
           setActiveSlideId(null);
           toast.success(`Reset ${state.device} to defaults`);
         }}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
         exporting={exporting}
         savedAt={savedAt}
         saveError={saveError}
@@ -614,6 +649,8 @@ export function ScreenshotEditor() {
               locale={state.locale}
               appName={state.appName}
               appIcon={state.appIcon}
+              fontFamily={fontFamily}
+              fontFaceCss={fontFaceCss}
               connectedCanvas={state.connectedCanvas}
               selectedElement={selectedElement}
               onActiveSlideChange={setActiveSlideId}
@@ -637,6 +674,7 @@ export function ScreenshotEditor() {
               slide={activeSlide}
               device={state.device}
               orientation={state.orientation}
+              theme={theme}
               locale={state.locale}
               selectedElementId={
                 selectedElement?.slideId === activeSlide.id ? selectedElement.elementId : null
@@ -696,6 +734,8 @@ export function ScreenshotEditor() {
                 locale={exportLocaleOverride ?? state.locale}
                 appName={state.appName}
                 appIcon={state.appIcon}
+                fontFamily={fontFamily}
+                fontFaceCss={fontFaceCss}
                 connectedCanvas={state.connectedCanvas}
                 hideEmpty
               />

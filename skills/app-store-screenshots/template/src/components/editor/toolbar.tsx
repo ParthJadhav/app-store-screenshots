@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { AlertTriangle, Check, Cloud, Download, UnfoldHorizontal, RotateCcw } from "lucide-react";
+import { AlertTriangle, Check, Cloud, Download, Redo2, RotateCcw, Undo2, UnfoldHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,16 +20,26 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DEVICE_LABEL,
+  SCREENSHOT_FONTS,
   supportsLandscape,
+  THEMES,
 } from "@/lib/constants";
 import { detectPlatform } from "@/lib/defaults";
-import type { Device, Orientation } from "@/lib/types";
+import type { Device, Orientation, ScreenshotFontId } from "@/lib/types";
+import type { ImportedFont } from "@/lib/types";
+import { FontImporter } from "./font-importer";
 
 type Props = {
   appName: string;
   setAppName: (v: string) => void;
   connectedCanvas: boolean;
   setConnectedCanvas: (v: boolean) => void;
+  themeId: string;
+  setThemeId: (v: string) => void;
+  fontId: ScreenshotFontId;
+  setFontId: (v: ScreenshotFontId) => void;
+  importedFont?: ImportedFont;
+  setImportedFont: (font: ImportedFont) => void;
   locale: string;
   setLocale: (v: string) => void;
   locales: string[];
@@ -40,6 +50,10 @@ type Props = {
   onExport: () => void;
   onResetAll: () => void;
   onResetDevice: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   exporting: string | null;
   savedAt: number | null;
   saveError: string | null;
@@ -63,6 +77,7 @@ export function Toolbar(props: Props) {
   const showLocale = props.locales.length > 1;
 
   const deviceLabel = DEVICE_LABEL[props.device];
+  const themes = Object.values(THEMES);
 
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b bg-card/40 px-4 py-2">
@@ -97,6 +112,39 @@ export function Toolbar(props: Props) {
       </Button>
 
       <span aria-hidden className="mx-1 h-5 w-px bg-border" />
+
+      <Select value={props.themeId} onValueChange={props.setThemeId} disabled={props.busy}>
+        <SelectTrigger className="h-8 w-40 text-xs" aria-label="Screenshot theme">
+          <SelectValue placeholder="Theme" />
+        </SelectTrigger>
+        <SelectContent>
+          {themes.map((theme) => (
+            <SelectItem key={theme.id} value={theme.id}>
+              <span className="flex items-center gap-2">
+                <span className="flex gap-0.5" aria-hidden>
+                  <span className="h-3 w-3 rounded-full border border-black/15" style={{ backgroundColor: theme.bg }} />
+                  <span className="h-3 w-3 rounded-full border border-black/15" style={{ backgroundColor: theme.accent }} />
+                </span>
+                {theme.name}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={props.fontId} onValueChange={(fontId) => props.setFontId(fontId as ScreenshotFontId)} disabled={props.busy}>
+        <SelectTrigger className="h-8 w-44 text-xs" aria-label="Screenshot font">
+          <SelectValue placeholder="Font" />
+        </SelectTrigger>
+        <SelectContent>
+          {Object.entries(SCREENSHOT_FONTS).map(([id, font]) => (
+            <SelectItem key={id} value={id}>{font.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {props.fontId === "self-hosted" && (
+        <FontImporter disabled={props.busy} importedFont={props.importedFont} onImported={props.setImportedFont} />
+      )}
 
       <Tabs
         value={platform}
@@ -175,6 +223,30 @@ export function Toolbar(props: Props) {
       <div className="ml-auto flex shrink-0 items-center gap-2">
         <SaveStatus savedAt={props.savedAt} saveError={props.saveError} />
         <span aria-hidden className="h-5 w-px bg-border" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={props.onUndo}
+          title="Undo (⌘Z)"
+          aria-label="Undo"
+          disabled={props.busy || !props.canUndo}
+        >
+          <Undo2 className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={props.onRedo}
+          title="Redo (⌘⇧Z)"
+          aria-label="Redo"
+          disabled={props.busy || !props.canRedo}
+        >
+          <Redo2 className="h-4 w-4" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
