@@ -219,3 +219,7 @@ Contributions are welcome, especially around export reliability, screenshot desi
 ## License
 
 MIT
+
+## Author
+
+Created by [Parth Jadhav](https://www.parthjadhav.com/).
