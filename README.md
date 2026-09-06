@@ -1,6 +1,6 @@
-# App Store & Google Play Screenshots Generator
+# App Store, Microsoft Store & Google Play Screenshots Generator
 
-A skill for AI coding agents that scaffolds a production-ready Next.js editor for App Store and Google Play marketing screenshots. It gives you a connected canvas, real device frames, inspector controls, persistent project state, and one-click export bundles at store-ready sizes.
+A skill for AI coding agents that scaffolds a production-ready Next.js editor for App Store, Microsoft Store, and Google Play marketing screenshots. It gives you a connected canvas, real device frames, inspector controls, persistent project state, and one-click export bundles at store-ready sizes.
 
 ![Current connected-canvas editor showing a Bloom screenshot deck](example.png)
 
@@ -14,8 +14,8 @@ Example screenshots generated with this skill were accepted for [Bloom Coffee Sh
 - Keeps older projects safe with isolated-screen export mode until you opt into connected crops
 - Saves every deck to `app-store-screenshots.json`, so the project is git-trackable and resumable
 - Uploads picked screenshots into `public/screenshots/uploaded/<hash>.png`
-- Supports iOS, iPad, Android phone, Android tablet, and Play Store feature graphic decks
-- Exports exact PNG bundles for all required App Store and Google Play sizes
+- Supports iOS, iPad, Android phone, Android tablet, macOS, Windows, and Play Store feature graphic decks
+- Exports PNG bundles at common App Store, Microsoft Store, and Google Play sizes
 - Supports locales, RTL-aware copy/layout guidance, reusable themes, and in-place project migration
 
 ## Current Editor UI
@@ -24,8 +24,8 @@ Example screenshots generated with this skill were accepted for [Bloom Coffee Sh
 - **Isolated mode** - preserve legacy decks where offscreen elements should not leak into neighboring exports.
 - **Screen sidebar** - add, select, and drag-to-reorder screens with live thumbnails.
 - **Inspector** - edit layout, labels, headlines, screenshots, element stacking, and transforms from the right panel.
-- **Platform switcher** - keep iOS and Android decks side by side while sharing the same editor workflow.
-- **Device selector** - design for iPhone, iPad, Android phone, Android tablets, and feature graphic formats.
+- **Platform switcher** - keep iOS, Android, and Desktop decks side by side while sharing the same editor workflow.
+- **Device selector** - design for iPhone, iPad, Android phone, Android tablets, macOS, Windows, and feature graphic formats.
 - **Autosave** - writes to disk through `/api/project` and mirrors to `localStorage` for instant reloads.
 - **Export bundle** - downloads a zip organized by platform, device, resolution, and locale.
 

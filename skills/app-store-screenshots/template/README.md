@@ -1,6 +1,6 @@
-# App Store Screenshots — Editor Template
+# Store Screenshots — Editor Template
 
-A pre-built Next.js + ShadCN editor for generating App Store and Google Play screenshots. Scaffolded by the `app-store-screenshots` skill.
+A pre-built Next.js + ShadCN editor for generating App Store, Microsoft Store, and Google Play screenshots. Scaffolded by the `app-store-screenshots` skill.
 
 ## Quick start
 
@@ -13,9 +13,9 @@ bun dev       # http://localhost:3000
 
 - **Connected canvas editor** (`src/components/editor/`) — every screen sits on one horizontal canvas, so phones, captions, and other elements can be dragged across screen boundaries and exported as split crops when Connected mode is enabled.
 - **Screen controls** — drag-to-reorder screens, click-to-edit text, screenshot drop targets, per-screen layout switcher, dark/light toggle.
-- **Device frames** (`src/components/editor/device-frames.tsx`) — iPhone (PNG mockup), iPad, Android phone, Android tablet (portrait + landscape), feature graphic.
+- **Device frames** (`src/components/editor/device-frames.tsx`) — iPhone (PNG mockup), iPad, Android phone, Android tablet (portrait + landscape), macOS and Windows desktop windows, feature graphic.
 - **Auto-save (git-trackable)** — every change is persisted within ~600ms to **`app-store-screenshots.json`** at the project root (via `/api/project`) **and** mirrored to `localStorage` as an instant-paint cache. Commit `app-store-screenshots.json` and you can `git clone` to another machine and resume exactly where you left off.
-- **Multi-device decks** — iOS and Android slide decks live side by side; switching the platform tab preserves both.
+- **Multi-device decks** — iOS, Android, and Desktop slide decks live side by side; switching the platform tab preserves all three.
 - **One-click export** — bulk PNG export at any required App Store / Play Store resolution using `html-to-image`; each PNG is rendered from the current connected or isolated deck mode.
 - **Project migration** — older `app-store-screenshots.json` files are migrated on load. Existing per-slide transforms remain valid, and connected crops become available without rewriting the deck by hand.
 - **Legacy-safe mode** — pre-v2 projects opened directly in the editor start in isolated-screen mode first, then can opt into connected crops with the toolbar's Connected/Isolated control. Skill-run in-place migrations keep legacy decks isolated unless the project had already explicitly opted into connected canvas.
@@ -29,6 +29,8 @@ Two ways:
    - `public/screenshots/apple/iphone/en/...`
    - `public/screenshots/android/phone/en/...`
    - `public/screenshots/apple/ipad/en/...`
+   - `public/screenshots/desktop/macos/en/...`
+   - `public/screenshots/desktop/windows/en/...`
 
 Update the matching `screenshot` fields in `app-store-screenshots.json` to point at whatever filenames you choose.
 

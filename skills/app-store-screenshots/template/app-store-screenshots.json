@@ -346,6 +346,54 @@
         "screenshot": ""
       }
     ],
+    "macos": [
+      {
+        "id": "s_desktop_mac_1",
+        "layout": "hero",
+        "label": { "en": "MADE FOR MACOS" },
+        "headline": { "en": "Your best work,\nfront and center." },
+        "screenshot": ""
+      },
+      {
+        "id": "s_desktop_mac_2",
+        "layout": "split-landscape",
+        "label": { "en": "FEATURE 01" },
+        "headline": { "en": "More room for\nwhat matters." },
+        "screenshot": ""
+      },
+      {
+        "id": "s_desktop_mac_3",
+        "layout": "device-top",
+        "label": { "en": "FEATURE 02" },
+        "headline": { "en": "Designed for your desktop." },
+        "screenshot": "",
+        "inverted": true
+      }
+    ],
+    "windows": [
+      {
+        "id": "s_desktop_windows_1",
+        "layout": "hero",
+        "label": { "en": "MADE FOR WINDOWS" },
+        "headline": { "en": "Your best work,\nfront and center." },
+        "screenshot": ""
+      },
+      {
+        "id": "s_desktop_windows_2",
+        "layout": "split-landscape",
+        "label": { "en": "FEATURE 01" },
+        "headline": { "en": "More room for\nwhat matters." },
+        "screenshot": ""
+      },
+      {
+        "id": "s_desktop_windows_3",
+        "layout": "device-top",
+        "label": { "en": "FEATURE 02" },
+        "headline": { "en": "Designed for your desktop." },
+        "screenshot": "",
+        "inverted": true
+      }
+    ],
     "feature-graphic": [
       {
         "id": "s_mppgoot8_h",
@@ -364,6 +412,8 @@
     "android": [],
     "android-7": [],
     "android-10": [],
+    "macos": [],
+    "windows": [],
     "feature-graphic": []
   }
 }

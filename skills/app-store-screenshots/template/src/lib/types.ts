@@ -4,11 +4,13 @@ export type Device =
   | "android"
   | "android-7"
   | "android-10"
+  | "macos"
+  | "windows"
   | "feature-graphic";
 
 export type Orientation = "portrait" | "landscape";
 
-export type Platform = "ios" | "android";
+export type Platform = "ios" | "android" | "desktop";
 
 // Layouts the editor can render. Vary across slides for visual rhythm.
 export type SlideLayout =

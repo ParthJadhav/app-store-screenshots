@@ -95,6 +95,33 @@ function tabletStarter(kind: "7" | "10"): Slide[] {
   ];
 }
 
+function desktopStarter(platform: "macOS" | "Windows"): Slide[] {
+  return [
+    {
+      id: nid(),
+      layout: "hero",
+      label: en(`MADE FOR ${platform.toUpperCase()}`),
+      headline: en("Your best work,\nfront and center."),
+      screenshot: "",
+    },
+    {
+      id: nid(),
+      layout: "split-landscape",
+      label: en("FEATURE 01"),
+      headline: en("More room for\nwhat matters."),
+      screenshot: "",
+    },
+    {
+      id: nid(),
+      layout: "device-top",
+      label: en("FEATURE 02"),
+      headline: en("Designed for your desktop."),
+      screenshot: "",
+      inverted: true,
+    },
+  ];
+}
+
 function fgStarter(): Slide[] {
   return [
     {
@@ -123,6 +150,8 @@ export const DEFAULT_PROJECT: ProjectState = {
     ipad: ipadStarter(),
     "android-7": tabletStarter("7"),
     "android-10": tabletStarter("10"),
+    macos: desktopStarter("macOS"),
+    windows: desktopStarter("Windows"),
     "feature-graphic": fgStarter(),
   },
 };
@@ -137,6 +166,8 @@ export function newSlide(layout: Slide["layout"] = "device-bottom"): Slide {
   };
 }
 
-export function detectPlatform(device: Device): "ios" | "android" {
-  return device === "iphone" || device === "ipad" ? "ios" : "android";
+export function detectPlatform(device: Device): "ios" | "android" | "desktop" {
+  if (device === "iphone" || device === "ipad") return "ios";
+  if (device === "macos" || device === "windows") return "desktop";
+  return "android";
 }

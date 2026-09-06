@@ -1,6 +1,6 @@
 ---
 name: app-store-screenshots
-description: Use when building App Store or Google Play screenshot pages, generating exportable marketing screenshots for iOS and/or Android apps, or scaffolding a screenshot editor with Next.js. Triggers on app store, play store, screenshots, marketing assets, html-to-image, phone mockup, android screenshots, feature graphic.
+description: Use when building App Store, Microsoft Store, or Google Play screenshot pages, generating exportable marketing screenshots for iOS, Android, macOS, and/or Windows apps, or scaffolding a screenshot editor with Next.js. Triggers on app store, play store, microsoft store, screenshots, marketing assets, html-to-image, device mockup, desktop screenshots, feature graphic.
 ---
 
 # App Store & Google Play Screenshots Generator
@@ -14,7 +14,7 @@ Scaffold a pre-built Next.js + ShadCN editor that lets the user design and expor
 - Cross-screen mockups: phone/device frames, captions, and layered elements can be moved across adjacent screens, then exported as clipped crops
 - Drop-target screenshot picker (file → saved to `public/screenshots/uploaded/<hash>.png`)
 - Auto-save to **`app-store-screenshots.json`** at the project root (git-trackable) + `localStorage` mirror
-- Easy iOS ↔ Android platform switch — separate slide decks live side by side
+- Easy iOS ↔ Android ↔ Desktop platform switch — separate slide decks live side by side
 - One-click bulk PNG export at every Apple/Google-required resolution via `html-to-image`
 - Light/dark variant toggle per slide, theme presets, locale select
 - Guided in-place migration for older projects created by this skill; passive and explicit migrations keep legacy decks isolated until the user intentionally opts into connected canvas
@@ -26,6 +26,8 @@ Supported devices out of the box:
 - **Android Tablet 7"** (portrait + landscape) — Google Play
 - **Android Tablet 10"** (portrait + landscape) — Google Play
 - **Feature Graphic** (1024×500 banner) — Google Play store listing header
+- **macOS** (16:10 desktop window) — Mac App Store and product listings
+- **Windows** (16:9 desktop window) — Microsoft Store and product listings
 
 ## Core Principle
 
@@ -131,7 +133,7 @@ const path = require("path");
 
 const PROJECT_FILE = "app-store-screenshots.json";
 const DEFAULT_LOCALE = "en";
-const DEVICE_KEYS = ["iphone", "ipad", "android", "android-7", "android-10", "feature-graphic"];
+const DEVICE_KEYS = ["iphone", "ipad", "android", "android-7", "android-10", "macos", "windows", "feature-graphic"];
 const LAYOUTS = ["hero", "device-bottom", "device-top", "two-devices", "no-device", "split-landscape", "feature-graphic"];
 
 function readJson(file) {
@@ -453,7 +455,7 @@ Vary the `layout` field across slides. The editor exposes:
 - `device-top` — flipped, device above caption (good contrast slide)
 - `two-devices` — back + front phones layered
 - `no-device` — big standalone headline (use sparingly)
-- `split-landscape` — caption left + device right (tablet landscape only)
+- `split-landscape` — caption left + device right (tablet landscape and desktop)
 - `feature-graphic` — Play Store banner (1024×500)
 
 Never repeat the same layout twice in a row. Use 1-2 `inverted` (dark) slides for visual rhythm.
@@ -692,7 +694,7 @@ When you finish scaffolding, **start the dev server** (`bun dev` / `pnpm dev` / 
    bun dev       # → http://localhost:3000
    ```
    Substitute `pnpm` / `yarn` / `npm run` as appropriate for what was detected in Step 2.
-3. Which platforms have starter decks seeded (iOS, Android, or both).
+3. Which platforms have starter decks seeded (iOS, Android, Desktop, or a combination).
 4. Any user-supplied screenshots that didn't match the expected filenames (so they can rename or use the in-editor drop target).
 5. Point them at the **Export bundle** button once they're happy with the layouts.
 6. **Invite further edits:** say something like _"Feel free to ask me to make any changes you'd like to the screenshots — copy, layout, palette, anything. I can iterate with you."_
