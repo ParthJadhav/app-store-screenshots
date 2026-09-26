@@ -8,21 +8,12 @@ import {
   ArrowUpToLine,
   ChevronDown,
   ChevronUp,
-  Lightbulb,
   Plus,
   RotateCw,
   Trash2,
   Type,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -34,7 +25,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { LAYOUT_HINT, LAYOUT_LABEL } from "@/lib/constants";
-import { COPY_IDEA_SLOTS } from "@/lib/copy-ideas";
 import { nid } from "@/lib/defaults";
 import {
   isBuiltInElementId,
@@ -57,6 +47,7 @@ import type {
 import { BackgroundControls } from "./background-controls";
 import { ScreenshotPicker } from "./screenshot-picker";
 import { getCanvas, getElementTransform } from "./slide-canvas";
+import { TextStyleControls } from "./text-style-controls";
 
 type Props = {
   slide: Slide;
@@ -163,22 +154,31 @@ export function Inspector({
               onChange={(e) => setLocaleField("label", e.target.value)}
               placeholder={labelPlaceholder}
             />
+            <TextStyleControls
+              title="Label Font, Punto & Renk"
+              defaultColorLabel="Tema Accent"
+              styleConfig={slide.labelStyle}
+              onChange={(next) => onChange({ labelStyle: next })}
+            />
           </div>
         )}
 
         <div className="space-y-1.5">
           <div className="flex items-baseline justify-between">
             <Label className="text-xs">{isFeatureGraphic ? "Tagline" : "Headline"}</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground">newline = break</span>
-              <CopyIdeasMenu onPick={(formula) => setLocaleField("headline", formula)} />
-            </div>
+            <span className="text-[10px] text-muted-foreground">newline = break</span>
           </div>
           <Textarea
             value={localeHeadline}
             onChange={(e) => setLocaleField("headline", e.target.value)}
             rows={3}
             placeholder={headlinePlaceholder}
+          />
+          <TextStyleControls
+            title="Headline Font, Punto & Renk"
+            defaultColorLabel="Tema Önplan"
+            styleConfig={slide.headlineStyle}
+            onChange={(next) => onChange({ headlineStyle: next })}
           />
         </div>
 
@@ -245,45 +245,6 @@ export function Inspector({
         )}
       </div>
     </div>
-  );
-}
-
-function CopyIdeasMenu({ onPick }: { onPick: (formula: string) => void }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground"
-          title="Insert a headline formula, then replace the [bracketed] words"
-        >
-          <Lightbulb className="h-3 w-3" />
-          Copy ideas
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-[420px] w-72 overflow-y-auto">
-        {COPY_IDEA_SLOTS.map((slot, i) => (
-          <React.Fragment key={slot.id}>
-            {i > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              {slot.name}
-            </DropdownMenuLabel>
-            {slot.ideas.map((idea) => (
-              <DropdownMenuItem
-                key={idea.formula}
-                onSelect={() => onPick(idea.formula)}
-                className="flex-col items-start gap-0.5"
-              >
-                <span className="text-xs font-medium">{idea.formula.replace(/\n/g, " / ")}</span>
-                <span className="text-[11px] text-muted-foreground">{idea.example}</span>
-              </DropdownMenuItem>
-            ))}
-          </React.Fragment>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 

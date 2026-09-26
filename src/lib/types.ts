@@ -55,6 +55,13 @@ export type TextElement = {
   align?: "left" | "center" | "right";
 };
 
+export type TextStyleConfig = {
+  fontFamily?: string;
+  fontSizeScale?: number;
+  fontWeight?: number;
+  color?: string;
+};
+
 export type BackgroundType = "theme" | "gradient" | "solid" | "image";
 
 export type SlideBackgroundConfig = {
@@ -68,13 +75,20 @@ export type SlideBackgroundConfig = {
   imageFit?: "cover" | "contain" | "fill";
   overlayOpacity?: number;
   hideBlobs?: boolean;
+  blobColor?: string;
+  blobColor2?: string;
+  blobScale?: number;
+  blobOpacity?: number;
+  blobBlur?: number;
 };
 
 export type Slide = {
   id: string;
   layout: SlideLayout;
   label: LocalizedText;       // tiny uppercase caption above headline, per locale
+  labelStyle?: TextStyleConfig; // custom typography styling for label
   headline: LocalizedText;    // multi-line; newlines are intentional, per locale
+  headlineStyle?: TextStyleConfig; // custom typography styling for headline
   screenshot: string;         // path under /screenshots/ — may contain {locale}
   screenshotSecondary?: string; // for two-devices layout — may contain {locale}
   inverted?: boolean;         // dark background variant
@@ -89,26 +103,7 @@ export type ThemeId =
   | "dark-bold"
   | "warm-editorial"
   | "ocean-fresh"
-  | "bloom-roast"
-  // One preset per named style in style-prompts/ (same id as the slug).
-  | "hand-drawn-editorial-tasks"
-  | "retro-rubberhose-mascot"
-  | "moody-curated-dating"
-  | "paper-sticker-skeuomorphic"
-  | "dreamy-pastel-couples"
-  | "glossy-3d-kbeauty-creator"
-  | "liquid-glass-aurora"
-  | "swiss-grid-bold"
-  | "neon-athletic-night"
-  | "magazine-cover-editorial"
-  | "candy-pop-social"
-  | "soft-clay-wellness"
-  | "midnight-glow-pro"
-  | "risograph-zine"
-  | "bento-keynote-grid"
-  | "toybox-primary"
-  | "quiet-japandi"
-  | "vintage-travel-poster";
+  | "bloom-roast";
 
 export type Theme = {
   id: string;
@@ -117,8 +112,7 @@ export type Theme = {
   bgAlt: string;       // inverted background
   fg: string;          // text on bg
   fgAlt: string;       // text on bgAlt
-  accent: string;      // label color on bg, decorative blobs
-  accentAlt?: string;  // label color on bgAlt; defaults to accent
+  accent: string;
   muted: string;
 };
 
