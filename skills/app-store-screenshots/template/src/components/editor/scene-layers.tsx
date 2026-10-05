@@ -379,6 +379,9 @@ export function CalloutLoupe({
 }) {
   const resolved = img(src);
   const border = Math.max(3, cW * 0.009);
+  // A % radius resolves against width and height separately, so a wide lens
+  // got stretched elliptical corners. A canvas-relative px radius stays round.
+  const radius = callout.shape === "circle" ? "50%" : `${cW * 0.035}px`;
   // An export without a screenshot shouldn't ship an empty lens.
   if (!resolved && hideEmpty) return null;
   return (
@@ -387,7 +390,7 @@ export function CalloutLoupe({
         position: "relative",
         width: "100%",
         height: "100%",
-        borderRadius: callout.shape === "circle" ? "50%" : "14%",
+        borderRadius: radius,
         overflow: "hidden",
         background: "#0f0f12",
         boxShadow: `0 0 0 ${border}px #ffffff, 0 ${cW * 0.025}px ${cW * 0.06}px rgba(0,0,0,0.32)`,
