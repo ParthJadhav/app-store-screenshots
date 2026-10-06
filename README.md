@@ -1,5 +1,7 @@
 # App Store & Google Play Screenshots Generator
 
+English | [Türkçe](README.tr.md)
+
 Working copy maintained by [yanclogic](https://github.com/yanclogic), based on [Parth Jadhav's app-store-screenshots](https://github.com/ParthJadhav/app-store-screenshots). The editor template is the upstream project. This copy tightens the skill so agents follow one source for copy, device frames, thumbnail checks, and migration. License remains MIT.
 
 A skill for AI coding agents that scaffolds a production-ready Next.js editor for App Store and Google Play marketing screenshots. It gives you a connected canvas, real device frames, inspector controls, persistent project state, and one-click export bundles at store-ready sizes.
@@ -27,14 +29,15 @@ Example screenshots generated with this skill were accepted for [Bloom Coffee Sh
 - **Isolated mode** - preserve legacy decks where offscreen elements should not leak into neighboring exports.
 - **Screen sidebar** - add, select, and drag-to-reorder screens with live thumbnails.
 - **Inspector** - edit layout, labels, headlines, screenshots, element stacking, and transforms from the right panel. A **Copy ideas** menu next to the headline drops in a proven formula to rewrite.
-- **Theme picker** - switch palette presets from the toolbar, including one preset per named style.
+- **Theme picker** - switch palette presets from the toolbar, including one preset per named style. The palette button next to it edits the open theme's colors for this project only.
 - **Style Lab** - see four complete looks for your deck side by side (palette, type, layout rhythm and scene), keep the parts you like with Colors/Type/Layout/Scene locks, shuffle or remix the rest, save favourites, apply one as a single undoable edit, and export a comparison image.
 - **Scene Playground** - restyle every screen at once: backdrops (gradient, solid, aurora, spotlight, grid, dots, ruled) that can flow across the whole strip, decorations, device shadow, glow and 3D tilt, and headline weight, case and alignment.
 - **Magnifier** - add a loupe to any screen that zooms into one detail of its screenshot; aim it on a thumbnail, set the zoom and shape, and drag it anywhere.
 - **Platform switcher** - iOS, Mac, and Android tabs keep every deck side by side while sharing the same editor workflow.
 - **Device selector** - iPhone, iPad, Apple TV, Apple Watch, and CarPlay under iOS; Android phone, Android tablets, and the feature graphic under Android. The Mac tab is a single 16:10 Mac deck.
 - **Autosave** - writes to disk through `/api/project`, mirrors to `localStorage`, and detects newer disk revisions before overwriting work from another tab or agent. Failed saves can be retried; unsaved edits trigger a warning before leaving.
-- **Export bundle** - downloads a zip organized by platform, device, resolution, and locale.
+- **Zoom** - zoom from 5% to 200%, fit the whole deck or the active screen, or pinch and ⌘-scroll on a trackpad.
+- **Export bundle** - downloads a zip organized by platform, device, resolution, and locale. The arrow next to it puts several device decks in one zip.
 
 Tip: when capturing source iPhone screenshots, the 6.1-inch simulator is usually the easiest starting point because it reduces manual image adjustment inside the frames.
 
@@ -220,7 +223,7 @@ Screenshots are designed at the largest size for each device and scaled down for
 - Runtime uploads are written to `public/screenshots/uploaded/<hash>.png`.
 - The editor reads `localStorage` first for fast paint, then reconciles with the project file.
 - Older project files are migrated to schema v2 on load while keeping legacy decks isolated unless connected mode was already enabled.
-- Custom themes live in `src/lib/constants.ts`; unknown theme ids fall back to `clean-light`.
+- Custom themes live in `src/lib/constants.ts`; unknown theme ids fall back to `clean-light`. Color edits to a built-in theme are saved per theme in `themeColors`.
 
 ## Styles and Copy
 
