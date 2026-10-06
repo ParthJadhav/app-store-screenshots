@@ -5,7 +5,7 @@ import { Check, Dices, Download, FlaskConical, Lock, LockOpen, Shuffle, Star, Tr
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DEVICE_LABEL, SCREENSHOT_FONTS, THEMES, themeById } from "@/lib/constants";
+import { DEVICE_LABEL, SCREENSHOT_FONTS, THEMES, projectTheme } from "@/lib/constants";
 import { renderSlide } from "@/lib/export-render";
 import { BACKDROPS, DECORATIONS } from "@/lib/scene";
 import {
@@ -404,7 +404,7 @@ function DeckPreview({ project, height }: { project: ProjectState; height: numbe
           slides={slides}
           device={project.device}
           orientation={project.orientation}
-          theme={themeById(project.themeId)}
+          theme={projectTheme(project.themeId, project.themeColors)}
           locale={project.locale}
           appName={project.appName}
           appIcon={project.appIcon}

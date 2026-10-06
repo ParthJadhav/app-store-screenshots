@@ -29,6 +29,9 @@ export function projectValidationError(value: unknown): string | null {
       value.locales.some(locale => typeof locale !== "string" || !/^[a-zA-Z0-9]+(?:[-_][a-zA-Z0-9]+)*$/.test(locale)) ||
       new Set(value.locales).size !== value.locales.length)) return "locales must be a list of unique locale codes";
   if (value.scene !== undefined && !record(value.scene)) return "scene must be an object";
+  if (value.themeColors !== undefined && (!record(value.themeColors) || Object.values(value.themeColors).some(colors => !record(colors)))) {
+    return "themeColors must map theme ids to color objects";
+  }
   if (value.savedLooks !== undefined && (!Array.isArray(value.savedLooks) || value.savedLooks.some(look => !record(look)))) {
     return "savedLooks must be a list of looks";
   }

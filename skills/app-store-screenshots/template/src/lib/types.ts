@@ -166,6 +166,10 @@ export type Theme = {
   muted: string;
 };
 
+export type ThemeColorKey = "bg" | "bgAlt" | "fg" | "fgAlt" | "accent" | "accentAlt" | "muted";
+/** Per-theme color edits, keyed by theme id. Only changed colors are stored. */
+export type ThemeColors = Record<string, Partial<Record<ThemeColorKey, string>>>;
+
 // ---------- Scene (deck-wide composition, see lib/scene.ts) ----------
 
 export type SceneBackdrop = "gradient" | "solid" | "aurora" | "spotlight" | "grid" | "dots" | "lines";
@@ -209,6 +213,7 @@ export type ProjectState = {
   schemaVersion?: number;
   appName: string;
   themeId: string;
+  themeColors?: ThemeColors;
   fontId?: ScreenshotFontId;
   importedFont?: ImportedFont;
   // v1 projects render as isolated screens until the user opts into connected crops.

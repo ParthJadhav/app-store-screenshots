@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
+import { GalleryHorizontal, Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DEVICE_LABEL, LAYOUT_LABEL } from "@/lib/constants";
 import type {
@@ -35,6 +35,12 @@ type Props = {
   onElementChange: (slideId: string, id: ElementId, t: ElementTransform) => void;
   onSelectElement: (element: SelectedElement | null) => void;
 };
+
+const MIN_ZOOM = 0.05;
+const MAX_ZOOM = 2;
+const PAD_X = 96;
+const PAD_Y = 80 + 48;
+const clampZoom = (value: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number(value.toFixed(3))));
 
 // Fits one full-resolution screen inside the viewport while keeping the whole
 // deck horizontally scrollable as one connected canvas.
@@ -75,8 +81,8 @@ export function PreviewStage({
     if (!el) return;
     const update = () => {
       const rect = el.getBoundingClientRect();
-      const sx = (rect.width - 96) / cW;
-      const sy = (rect.height - 96) / cH;
+      const sx = (rect.width - PAD_X) / cW;
+      const sy = (rect.height - PAD_Y) / cH;
       setFitScale(Math.max(0.05, Math.min(sx, sy)));
     };
     update();
@@ -88,6 +94,27 @@ export function PreviewStage({
   React.useEffect(() => {
     setZoom(1);
   }, [device, orientation]);
+
+  // ⌘/Ctrl + wheel and trackpad pinch (reported as ctrl + wheel) zoom the deck.
+  React.useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      setZoom((value) => clampZoom(value * Math.exp(-e.deltaY * 0.01)));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  const fitAllScreens = () => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const sx = (scroller.clientWidth - PAD_X) / (totalW * fitScale);
+    const sy = (scroller.clientHeight - PAD_Y) / (cH * fitScale);
+    setZoom(clampZoom(Math.min(1, sx, sy)));
+  };
 
   const panToActiveScreen = React.useCallback((nextScale: number) => {
     const scroller = scrollerRef.current;
@@ -121,7 +148,7 @@ export function PreviewStage({
       ref={containerRef}
       className="relative h-full w-full overflow-hidden bg-[radial-gradient(70%_70%_at_50%_35%,_hsl(var(--background))_0%,_hsl(var(--muted))_100%)]"
     >
-      <div ref={scrollerRef} className="h-full w-full overflow-auto p-12">
+      <div ref={scrollerRef} className="h-full w-full overflow-auto px-12 pb-12 pt-20">
         <div
           style={{
             width: totalW * scale,
@@ -206,8 +233,8 @@ export function PreviewStage({
           variant="ghost"
           size="icon"
           className="h-6 w-6"
-          onClick={() => setZoom((value) => Math.max(0.25, Number((value - 0.1).toFixed(2))))}
-          disabled={zoom <= 0.25}
+          onClick={() => setZoom((value) => clampZoom(value / 1.25))}
+          disabled={zoom <= MIN_ZOOM}
           title="Zoom out"
           aria-label="Zoom out"
         >
@@ -219,12 +246,23 @@ export function PreviewStage({
           variant="ghost"
           size="icon"
           className="h-6 w-6"
-          onClick={() => setZoom((value) => Math.min(2, Number((value + 0.1).toFixed(2))))}
-          disabled={zoom >= 2}
+          onClick={() => setZoom((value) => clampZoom(value * 1.25))}
+          disabled={zoom >= MAX_ZOOM}
           title="Zoom in"
           aria-label="Zoom in"
         >
           <ZoomIn className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={fitAllScreens}
+          title="Fit all screens"
+          aria-label="Fit all screens"
+        >
+          <GalleryHorizontal className="h-3.5 w-3.5" />
         </Button>
         <Button
           type="button"

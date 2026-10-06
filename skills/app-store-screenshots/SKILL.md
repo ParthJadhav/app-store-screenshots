@@ -288,6 +288,7 @@ The starter project state lives in `app-store-screenshots.json`, not `src/lib/de
 If the user provided headlines, edit `app-store-screenshots.json` to set:
 - `appName`
 - `themeId` (one of `"clean-light" | "dark-bold" | "warm-editorial" | "ocean-fresh" | "bloom-roast"`, a named style slug such as `"swiss-grid-bold"` when the user picked that style, or add a matching entry to `THEMES` in `src/lib/constants.ts`). Themes may set `accentAlt` for the label color on inverted slides.
+- Optional `themeColors`: brand colors on top of a built-in theme, keyed by theme id, e.g. `{ "paper-sticker-skeuomorphic": { "accent": "#E4572E" } }`. Keys: `bg`, `bgAlt`, `fg`, `fgAlt`, `accent`, `accentAlt`, `muted`; values are `#RRGGBB`. Prefer this over a new `THEMES` entry when the user only wants their brand colors. The user can edit these from the palette button next to the theme menu.
 - `appIcon` — public path of the app icon (e.g. `"/app-icon.png"` after copying it to `public/app-icon.png`). The Play Store feature graphic shows it; blank uses the app's initial. The icon can also be picked in the feature-graphic inspector.
 - `connectedCanvas` (`true` for new connected decks; migrated legacy decks should stay `false` until the user opts in)
 - Starter slides per device with the user's `label` + `headline` + screenshot paths

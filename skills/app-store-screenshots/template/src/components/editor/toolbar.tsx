@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { AlertTriangle, Check, Cloud, Download, FlaskConical, Redo2, RotateCcw, Undo2, UnfoldHorizontal, Upload } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, Cloud, Download, FlaskConical, Redo2, RotateCcw, Undo2, UnfoldHorizontal, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,6 +9,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -26,12 +35,13 @@ import {
   SCREENSHOT_FONTS,
   THEMES,
   supportsLandscape,
-  themeById,
+  projectTheme,
 } from "@/lib/constants";
 import { detectPlatform } from "@/lib/defaults";
-import type { Device, ImportedFont, Orientation, Platform, Scene, ScreenshotFontId, Theme } from "@/lib/types";
+import type { Device, ImportedFont, Orientation, Platform, Scene, ScreenshotFontId, Theme, ThemeColors } from "@/lib/types";
 import { FontImporter, type FontImporterHandle } from "./font-importer";
 import { ScenePlayground } from "./scene-playground";
+import { ThemeColorsEditor } from "./theme-colors-editor";
 
 const IMPORT_FONT_ACTION = "__import-font__";
 
@@ -40,6 +50,8 @@ type Props = {
   setAppName: (v: string) => void;
   themeId: string;
   setThemeId: (v: string) => void;
+  themeColors: ThemeColors | undefined;
+  setThemeColors: (v: ThemeColors | undefined) => void;
   connectedCanvas: boolean;
   setConnectedCanvas: (v: boolean) => void;
   scene: Scene | undefined;
@@ -56,7 +68,8 @@ type Props = {
   setDevice: (v: Device) => void;
   orientation: Orientation;
   setOrientation: (v: Orientation) => void;
-  onExport: () => void;
+  onExport: (devices: Device[]) => void;
+  exportableDevices: Device[];
   onResetAll: () => void;
   onResetDevice: () => void;
   onUndo: () => void;
@@ -74,6 +87,11 @@ export function Toolbar(props: Props) {
   const platform = detectPlatform(props.device);
   const hasLandscape = supportsLandscape(props.device);
   const [resetOpen, setResetOpen] = React.useState(false);
+  const [exportSelection, setExportSelection] = React.useState<Device[]>(() => [props.device]);
+  const selectedExportDevices = props.exportableDevices.filter((d) => exportSelection.includes(d));
+  React.useEffect(() => {
+    setExportSelection((prev) => (prev.includes(props.device) ? prev : [...prev, props.device]));
+  }, [props.device]);
 
   // Track last device per platform so the platform tabs preserve the user's choice.
   const lastByPlatform = React.useRef<Record<Platform, Device>>({
@@ -89,7 +107,7 @@ export function Toolbar(props: Props) {
 
   const deviceLabel = DEVICE_LABEL[props.device];
   const platformDevices = PLATFORM_DEVICES[platform];
-  const activeTheme = themeById(props.themeId);
+  const activeTheme = projectTheme(props.themeId, props.themeColors);
 
   const fontImporter = React.useRef<FontImporterHandle>(null);
   const [importingFont, setImportingFont] = React.useState(false);
@@ -157,11 +175,17 @@ export function Toolbar(props: Props) {
         <SelectContent>
           {Object.values(THEMES).map((theme) => (
             <SelectItem key={theme.id} value={theme.id}>
-              <ThemeOption theme={theme} />
+              <ThemeOption theme={projectTheme(theme.id, props.themeColors)} />
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
+      <ThemeColorsEditor
+        themeId={activeTheme.id}
+        themeColors={props.themeColors}
+        onChange={props.setThemeColors}
+        disabled={props.busy}
+      />
 
       <Select
         value={props.fontId}
@@ -306,16 +330,56 @@ export function Toolbar(props: Props) {
         >
           <RotateCcw className="h-4 w-4" />
         </Button>
-        <Button
-          onClick={props.onExport}
-          disabled={!!props.exporting || importingFont}
-          size="sm"
-          className="h-8"
-          title="Export every size × locale for this device as a zip"
-        >
-          <Download className="h-4 w-4" />
-          {props.exporting ? `Exporting ${props.exporting}` : "Export bundle"}
-        </Button>
+        <div className="flex items-center">
+          <Button
+            onClick={() => props.onExport([props.device])}
+            disabled={!!props.exporting || importingFont}
+            size="sm"
+            className="h-8 rounded-r-none"
+            title="Export every size × locale for this device as a zip"
+          >
+            <Download className="h-4 w-4" />
+            {props.exporting ? `Exporting ${props.exporting}` : "Export bundle"}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                disabled={!!props.exporting || importingFont}
+                size="sm"
+                className="h-8 rounded-l-none border-l border-primary-foreground/20 px-2"
+                title="Choose several devices for one zip"
+                aria-label="Choose devices to export"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Devices to export</DropdownMenuLabel>
+              {props.exportableDevices.map((device) => (
+                <DropdownMenuCheckboxItem
+                  key={device}
+                  checked={exportSelection.includes(device)}
+                  onSelect={(e) => e.preventDefault()}
+                  onCheckedChange={(checked) =>
+                    setExportSelection((prev) =>
+                      checked ? [...prev, device] : prev.filter((d) => d !== device),
+                    )
+                  }
+                >
+                  {DEVICE_LABEL[device]}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={selectedExportDevices.length === 0}
+                onSelect={() => props.onExport(selectedExportDevices)}
+              >
+                <Download className="h-4 w-4" />
+                Export {selectedExportDevices.length} device{selectedExportDevices.length === 1 ? "" : "s"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <Dialog open={resetOpen} onOpenChange={setResetOpen}>

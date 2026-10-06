@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DEFAULT_SCREENSHOT_FONT_ID, PROJECT_SCHEMA_VERSION, SCREENSHOT_FONTS, STORAGE_KEY } from "./constants";
+import { DEFAULT_SCREENSHOT_FONT_ID, PROJECT_SCHEMA_VERSION, SCREENSHOT_FONTS, STORAGE_KEY, THEME_COLOR_LABEL } from "./constants";
 import { cleanHexColor } from "./clean-hex-color";
 import { cleanImportedFont } from "./clean-imported-font";
 import { DEFAULT_PROJECT } from "./defaults";
@@ -8,7 +8,7 @@ import { coerceLocalized } from "./locale";
 import { projectValidationError } from "./project-validation";
 import { cleanCallout, cleanLook, cleanScene } from "./scene";
 import { cleanTypography } from "./typography";
-import type { Device, ElementTransform, ImageElement, Look, ProjectState, ScreenshotFontId, Slide, TextElement } from "./types";
+import type { Device, ElementTransform, ImageElement, Look, ProjectState, ScreenshotFontId, Slide, TextElement, ThemeColorKey, ThemeColors } from "./types";
 
 const HISTORY_LIMIT = 50;
 // Coalesce rapid edits (typing, slider drags) into a single undo step.
@@ -33,6 +33,21 @@ function cleanTransform(value: unknown): ElementTransform | undefined {
       ? { zIndex: raw.zIndex }
       : {}),
   };
+}
+
+function cleanThemeColors(value: unknown): ThemeColors | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const cleaned: ThemeColors = {};
+  for (const [themeId, colors] of Object.entries(value)) {
+    if (!colors || typeof colors !== "object") continue;
+    const edits = Object.fromEntries(
+      (Object.keys(THEME_COLOR_LABEL) as ThemeColorKey[])
+        .map((key) => [key, cleanHexColor((colors as Record<string, unknown>)[key])])
+        .filter((entry) => !!entry[1]),
+    );
+    if (Object.keys(edits).length) cleaned[themeId] = edits;
+  }
+  return Object.keys(cleaned).length ? cleaned : undefined;
 }
 
 function cleanTextElement(value: unknown): TextElement | undefined {
@@ -140,6 +155,7 @@ function mergeWithDefaults(parsed: Partial<ProjectState>): ProjectState {
       ? parsed.themeId
       : DEFAULT_PROJECT.themeId;
   const importedFont = cleanImportedFont(parsed.importedFont);
+  const themeColors = cleanThemeColors(parsed.themeColors);
   const scene = cleanScene(parsed.scene);
   const savedLooks = Array.isArray(parsed.savedLooks)
     ? parsed.savedLooks.map(cleanLook).filter((look): look is Look => !!look)
@@ -167,6 +183,7 @@ function mergeWithDefaults(parsed: Partial<ProjectState>): ProjectState {
     ...parsed,
     schemaVersion: PROJECT_SCHEMA_VERSION,
     themeId,
+    ...(themeColors ? { themeColors } : { themeColors: undefined }),
     fontId,
     ...(importedFont ? { importedFont } : { importedFont: undefined }),
     ...(scene ? { scene } : { scene: undefined }),

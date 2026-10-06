@@ -38,9 +38,17 @@ Two ways:
 
 Update the matching `screenshot` fields in `app-store-screenshots.json` to point at whatever filenames you choose.
 
+## Theme colors
+
+The palette button next to the theme menu edits the open theme's colors for this project: background, alternate background, text, accent, and muted. Edits are saved per theme in `themeColors`, so switching themes and back keeps them, and **Reset colors** returns to the theme's built-in colors. A single screen can still use **Background → Custom color** in the inspector.
+
+## Zoom
+
+The buttons in the canvas corner zoom from 5% to 200%. **Fit all screens** shows the whole deck at once, and **Fit active screen** goes back to one screen. On a trackpad you can pinch, or hold ⌘ (Ctrl on Windows) and scroll.
+
 ## Exporting
 
-The toolbar dropdown lists every Apple/Google-required size for the current device. Click **Export bundle** to download a zip. In Connected mode, each PNG is clipped from the connected canvas, so an element that straddles two screens appears split exactly where you placed it. In Isolated mode, each screen clips its own elements and legacy offscreen content cannot leak into neighboring exports.
+The toolbar dropdown lists every Apple/Google-required size for the current device. Click **Export bundle** to download a zip for the open device. To put several devices in one zip, open the arrow next to it, tick the devices, and click **Export N devices**. The menu lists decks that have screenshots, plus the open one. In Connected mode, each PNG is clipped from the connected canvas, so an element that straddles two screens appears split exactly where you placed it. In Isolated mode, each screen clips its own elements and legacy offscreen content cannot leak into neighboring exports.
 
 Exports lock the editor through preparation and bundling and render a fixed project snapshot. Referenced images that cannot be loaded stop the export with an error; empty screenshot fields still produce the existing placeholder warning.
 

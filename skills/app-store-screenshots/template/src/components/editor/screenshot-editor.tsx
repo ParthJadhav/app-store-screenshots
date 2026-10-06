@@ -4,12 +4,13 @@ import JSZip from "jszip";
 import { Toaster, toast } from "sonner";
 import {
   DEFAULT_SCREENSHOT_FONT_ID,
+  DEVICE_LABEL,
   getExportSizes,
   hasTheme,
   IMPORTED_FONT_FAMILY,
   SCREENSHOT_FONTS,
+  projectTheme,
   supportsLandscape,
-  themeById,
 } from "@/lib/constants";
 import { detectPlatform, nid } from "@/lib/defaults";
 import { imageElementKey, isBuiltInElementId, isImageElementId, isTextElementId, textElementKey } from "@/lib/elements";
@@ -56,7 +57,7 @@ export function ScreenshotEditor() {
   const currentSlides = state.slidesByDevice[state.device] || [];
   const activeSlide =
     currentSlides.find((s) => s.id === activeSlideId) || currentSlides[0] || null;
-  const theme = themeById(state.themeId);
+  const theme = projectTheme(state.themeId, state.themeColors);
   const fontId = state.fontId || DEFAULT_SCREENSHOT_FONT_ID;
   const fontFamily = SCREENSHOT_FONTS[fontId].family;
   useImportedFontFace(state.importedFont);
@@ -415,13 +416,98 @@ export function ScreenshotEditor() {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
-  async function exportAll() {
+  async function exportAll(devices: Device[]) {
     if (exportInProgress.current) return;
+    const targets = devices.filter((device) => (state.slidesByDevice[device] || []).length > 0);
+    if (!targets.length) {
+      toast.error("No screens to export");
+      return;
+    }
     exportInProgress.current = true;
     setExporting("Preparing…");
-    setExportProject(state);
     try {
-      await generateBundle();
+      const zip = new JSZip();
+      let okCount = 0;
+      let failed = 0;
+      let totalUnits = 0;
+      const errors: string[] = [];
+      const incomplete: string[] = [];
+      const skipped: string[] = [];
+      for (const device of targets) {
+        const project: ProjectState = {
+          ...state,
+          device,
+          orientation: device === state.device && supportsLandscape(device) ? state.orientation : "portrait",
+        };
+        setExportSlideIndex(0);
+        setExportProject(project);
+        let result: Awaited<ReturnType<typeof renderDeck>>;
+        try {
+          result = await renderDeck(project, zip, targets.length > 1 ? `${DEVICE_LABEL[device]} ` : "");
+        } catch (error) {
+          if (targets.length === 1) throw error;
+          skipped.push(error instanceof Error ? error.message : String(error));
+          continue;
+        }
+        okCount += result.okCount;
+        failed += result.failed;
+        totalUnits += result.totalUnits;
+        errors.push(...result.errors);
+        incomplete.push(...result.incomplete);
+      }
+
+      if (okCount + failed === 0) {
+        if (skipped.length) {
+          toast.error("Export failed", { description: skipped.slice(0, 3).join("\n") });
+        } else {
+          toast.error("Nothing to export");
+        }
+        return;
+      }
+
+      setExporting("Bundling…");
+      if (okCount > 0) {
+        const name =
+          targets.length === 1
+            ? `${slugify(state.appName)}-${detectPlatform(targets[0])}-${targets[0]}-${stamp()}.zip`
+            : `${slugify(state.appName)}-${targets.join("+")}-${stamp()}.zip`;
+        try {
+          const blob = await zip.generateAsync({ type: "blob" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = name;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+        } catch (e) {
+          toast.error("Couldn't bundle export");
+          console.error(e);
+          return;
+        }
+      }
+
+      if (incomplete.length > 0) {
+        toast.warning("Some screenshots may be missing from the export", {
+          description: `${incomplete.slice(0, 3).join(", ")}${incomplete.length > 3 ? "…" : ""}: a screenshot never finished rendering. Check those files, or export again.`,
+          duration: 12000,
+        });
+      }
+
+      if (skipped.length > 0) {
+        toast.error(`${skipped.length} device${skipped.length === 1 ? "" : "s"} skipped`, {
+          description: skipped.slice(0, 3).join("\n"),
+          duration: 12000,
+        });
+      }
+
+      const summary = `${targets.map((d) => DEVICE_LABEL[d]).join(" + ")} · ${state.locales.length} locale${state.locales.length === 1 ? "" : "s"}`;
+      if (failed === 0) {
+        toast.success(`Exported ${okCount} PNGs (${summary})`);
+      } else if (okCount === 0) {
+        toast.error(`All ${failed} renders failed`, { description: errors.slice(0, 3).join("\n") });
+      } else {
+        toast.error(`${failed} of ${totalUnits} renders failed`, { description: errors.slice(0, 3).join("\n") });
+      }
     } catch (error) {
       toast.error("Export failed", {
         description: error instanceof Error ? error.message : String(error),
@@ -434,38 +520,32 @@ export function ScreenshotEditor() {
     }
   }
 
-  async function generateBundle() {
-    if (!currentSlides.length) {
-      toast.error("No screens to export");
-      return;
-    }
+  // Renders one device deck into `zip`; the off-screen container must already
+  // be showing `project` (set via setExportProject before calling).
+  async function renderDeck(project: ProjectState, zip: JSZip, progressPrefix: string) {
+    const result = { okCount: 0, failed: 0, totalUnits: 0, errors: [] as string[], incomplete: [] as string[] };
+    const { device, orientation, locales } = project;
+    const slides = project.slidesByDevice[device] || [];
+    const deviceName = DEVICE_LABEL[device];
+    const sizes = getExportSizes(device, orientation);
+    if (!slides.length || !sizes.length) return result;
 
-    const sizes = getExportSizes(state.device, state.orientation);
-    if (!sizes.length) {
-      toast.error("Nothing to export");
-      return;
-    }
-    const locales = state.locales;
-    const exportPaths = exportAssetPaths(state);
+    const exportPaths = exportAssetPaths(project);
     await preloadImages(exportPaths, { retryFailed: true });
     const missingPaths = exportPaths.filter(didFail);
     if (missingPaths.length) {
-      throw new Error(`Images could not be loaded: ${missingPaths.slice(0, 3).join(", ")}`);
+      throw new Error(`Images could not be loaded (${deviceName}): ${missingPaths.slice(0, 3).join(", ")}`);
     }
     await waitForPaint();
 
-    const missingScreens = currentSlides
-      .map((slide, index) => ({ slide, index }))
-      .filter(({ slide }) => slideNeedsScreenshot(state.device, slide) && !slide.screenshot);
-    const reusedBackScreens = currentSlides
-      .map((slide, index) => ({ slide, index }))
-      .filter(
-        ({ slide }) =>
-          state.device !== "feature-graphic" &&
-          slide.layout === "two-devices" &&
-          slide.screenshot &&
-          !slide.screenshotSecondary,
-      );
+    const missingScreens = slides.filter((slide) => slideNeedsScreenshot(device, slide) && !slide.screenshot);
+    const reusedBackScreens = slides.filter(
+      (slide) =>
+        device !== "feature-graphic" &&
+        slide.layout === "two-devices" &&
+        slide.screenshot &&
+        !slide.screenshotSecondary,
+    );
     if (missingScreens.length > 0 || reusedBackScreens.length > 0) {
       const details = [
         missingScreens.length
@@ -475,7 +555,7 @@ export function ScreenshotEditor() {
           ? `${reusedBackScreens.length} two-device screen${reusedBackScreens.length === 1 ? "" : "s"} will reuse the primary screenshot in back.`
           : null,
       ].filter(Boolean);
-      toast.warning("Export includes placeholder screenshots", {
+      toast.warning(`${deviceName}: export includes placeholder screenshots`, {
         description: details.join(" "),
         duration: 7000,
       });
@@ -504,16 +584,11 @@ export function ScreenshotEditor() {
       }
     }
 
-    const { cW, cH } = getCanvas(state.device, state.orientation);
-    const platform = detectPlatform(state.device);
-    const zip = new JSZip();
-    const totalUnits = sizes.length * locales.length * currentSlides.length;
-    const totalRenders = locales.length * currentSlides.length;
+    const { cW, cH } = getCanvas(device, orientation);
+    const platform = detectPlatform(device);
+    result.totalUnits = sizes.length * locales.length * slides.length;
+    const totalRenders = locales.length * slides.length;
     let render = 0;
-    let okCount = 0;
-    let failed = 0;
-    const errors: string[] = [];
-    const incomplete: string[] = [];
 
     // Render each slide once per locale at canvas resolution, then scale that
     // one render to every export size. The sizes are all scalings of the same
@@ -525,35 +600,35 @@ export function ScreenshotEditor() {
       setExportLocaleOverride(locale);
       await waitForPaint();
 
-      for (let i = 0; i < currentSlides.length; i++) {
-        const slide = currentSlides[i];
+      for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i];
         render += 1;
-        setExporting(`${render}/${totalRenders}`);
+        setExporting(`${progressPrefix}${render}/${totalRenders}`);
         setExportSlideIndex(i);
         await waitForPaint();
         const el = exportRef.current;
         if (!el) {
           await encoding;
-          failed += sizes.length;
-          errors.push(`${locale} screen ${i + 1}: render target missing`);
+          result.failed += sizes.length;
+          result.errors.push(`${deviceName} ${locale} screen ${i + 1}: render target missing`);
           continue;
         }
         const filename = `${String(i + 1).padStart(2, "0")}-${slide.layout}.png`;
-        const label = `${locale} screen ${i + 1}`;
+        const label = `${deviceName} ${locale} screen ${i + 1}`;
         const fail = (e: unknown) => {
           const msg = e instanceof Error ? e.message : String(e);
-          errors.push(`${label}: ${msg}`);
-          console.error("Export failed", { slideId: slide.id, locale }, e);
+          result.errors.push(`${label}: ${msg}`);
+          console.error("Export failed", { device, slideId: slide.id, locale }, e);
         };
         let pngs: Promise<Uint8Array[]>;
         try {
           const rendered = await captureSlide(el, cW, cH);
-          if (rendered.missingImages > 0) incomplete.push(label);
+          if (rendered.missingImages > 0) result.incomplete.push(label);
           pngs = Promise.all(sizes.map((size) => rendered.toPng(size.w, size.h)));
         } catch (e) {
           fail(e);
           await encoding;
-          failed += sizes.length;
+          result.failed += sizes.length;
           continue;
         }
         // Attach rejection handling now: this screen can fail while the
@@ -561,13 +636,13 @@ export function ScreenshotEditor() {
         const nextEncoding = pngs.then(
           (files) => {
             sizes.forEach((size, index) => {
-              zip.file(`${platform}/${state.device}/${size.w}x${size.h}/${locale}/${filename}`, files[index]);
+              zip.file(`${platform}/${device}/${size.w}x${size.h}/${locale}/${filename}`, files[index]);
             });
-            okCount += sizes.length;
+            result.okCount += sizes.length;
           },
           (e) => {
             fail(e);
-            failed += sizes.length;
+            result.failed += sizes.length;
           },
         );
         await encoding;
@@ -575,44 +650,7 @@ export function ScreenshotEditor() {
       }
     }
     await encoding;
-
-    setExporting("Bundling…");
-
-    if (okCount > 0) {
-      try {
-        const blob = await zip.generateAsync({ type: "blob" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${slugify(state.appName)}-${platform}-${state.device}-${stamp()}.zip`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-      } catch (e) {
-        toast.error("Couldn't bundle export");
-        console.error(e);
-        return;
-      }
-    }
-
-    if (incomplete.length > 0) {
-      toast.warning("Some screenshots may be missing from the export", {
-        description: `${incomplete.slice(0, 3).join(", ")}${incomplete.length > 3 ? "…" : ""}: a screenshot never finished rendering. Check those files, or export again.`,
-        duration: 12000,
-      });
-    }
-
-    const summary = `${locales.length} locale${locales.length === 1 ? "" : "s"} × ${sizes.length} size${sizes.length === 1 ? "" : "s"}`;
-    if (failed === 0) {
-      toast.success(`Exported ${okCount} PNGs (${summary})`);
-    } else if (okCount === 0) {
-      toast.error(`All ${failed} renders failed`, {
-        description: errors.slice(0, 3).join("\n"),
-      });
-    } else {
-      toast.error(`${failed} of ${totalUnits} renders failed`, {
-        description: errors.slice(0, 3).join("\n"),
-      });
-    }
+    return result;
   }
 
   async function captureSlide(el: HTMLElement, sourceW: number, sourceH: number) {
@@ -671,6 +709,8 @@ export function ScreenshotEditor() {
         setAppName={(v) => setState((p) => ({ ...p, appName: v }))}
         themeId={state.themeId}
         setThemeId={(v) => setState((p) => ({ ...p, themeId: v }))}
+        themeColors={state.themeColors}
+        setThemeColors={(themeColors) => setState((p) => ({ ...p, themeColors }))}
         connectedCanvas={state.connectedCanvas}
         setConnectedCanvas={(v) => setState((p) => ({ ...p, connectedCanvas: v }))}
         scene={state.scene}
@@ -688,6 +728,7 @@ export function ScreenshotEditor() {
         orientation={state.orientation}
         setOrientation={(v) => setState((p) => ({ ...p, orientation: v }), { history: false })}
         onExport={exportAll}
+        exportableDevices={exportableDevices(state)}
         onResetAll={() => {
           reset();
           setActiveSlideId(null);
@@ -853,7 +894,7 @@ export function ScreenshotEditor() {
                 slides={exportSlides}
                 device={exportState.device}
                 orientation={exportState.orientation}
-                theme={themeById(exportState.themeId)}
+                theme={projectTheme(exportState.themeId, exportState.themeColors)}
                 locale={exportLocaleOverride ?? exportState.locale}
                 appName={exportState.appName}
                 appIcon={exportState.appIcon}
@@ -903,6 +944,18 @@ function slugify(s: string) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "") || "screenshots"
   );
+}
+
+// Untouched decks are filled with screenshot-less template placeholders, so
+// only offer decks the user has actually populated (plus the open one).
+function exportableDevices(state: ProjectState): Device[] {
+  return (Object.keys(state.slidesByDevice) as Device[]).filter((device) => {
+    const slides = state.slidesByDevice[device] || [];
+    if (!slides.length) return false;
+    if (device === state.device) return true;
+    if (device === "feature-graphic") return !!state.appIcon;
+    return slides.some((slide) => !!slide.screenshot);
+  });
 }
 
 function slideNeedsScreenshot(device: Device, slide: Slide) {

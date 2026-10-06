@@ -1,4 +1,4 @@
-import type { Device, Orientation, Platform, ScreenshotFontId, SlideLayout, Theme, ThemeId } from "./types";
+import type { Device, Orientation, Platform, ScreenshotFontId, SlideLayout, Theme, ThemeColorKey, ThemeColors, ThemeId } from "./types";
 
 // ---------- Canvas dimensions (design at largest required resolution) ----------
 export const CANVAS: Record<Device, { w: number; h: number; wL?: number; hL?: number }> = {
@@ -444,6 +444,23 @@ export const THEMES: Record<string, Theme> = {
 
 export function themeById(themeId: string | undefined): Theme {
   return THEMES[themeId || ""] || THEMES[DEFAULT_THEME_ID];
+}
+
+export const THEME_COLOR_LABEL: Record<ThemeColorKey, string> = {
+  bg: "Background",
+  bgAlt: "Alternate background",
+  fg: "Text",
+  fgAlt: "Text on alternate",
+  accent: "Accent",
+  accentAlt: "Accent on alternate",
+  muted: "Muted",
+};
+
+/** The theme with the project's color edits for it applied. */
+export function projectTheme(themeId: string | undefined, themeColors: ThemeColors | undefined): Theme {
+  const theme = themeById(themeId);
+  const edits = themeColors?.[theme.id];
+  return edits ? { ...theme, ...edits } : theme;
 }
 
 export function hasTheme(themeId: string | undefined): boolean {
