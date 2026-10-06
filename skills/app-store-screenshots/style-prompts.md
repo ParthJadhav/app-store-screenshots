@@ -4,7 +4,7 @@ A library of named visual styles distilled from the best App Store screenshots i
 
 Apply a style globally first; let the user override specific slides afterwards.
 
-If a user gives a prompt that does not match a named style, fall back to the General Visual Design Principles in `SKILL.md` and pick the **closest** style here as the starting point.
+If a user gives a prompt that does not match a named style, fall back to the Visual Design Principles in `SKILL.md` and pick the **closest** style here as the starting point.
 
 ---
 

@@ -1,5 +1,7 @@
 # App Store & Google Play Screenshots Generator
 
+Working copy maintained by [yanclogic](https://github.com/yanclogic), based on [Parth Jadhav's app-store-screenshots](https://github.com/ParthJadhav/app-store-screenshots). The editor template is the upstream project. This copy tightens the skill so agents follow one source for copy, device frames, thumbnail checks, and migration. License remains MIT.
+
 A skill for AI coding agents that scaffolds a production-ready Next.js editor for App Store and Google Play marketing screenshots. It gives you a connected canvas, real device frames, inspector controls, persistent project state, and one-click export bundles at store-ready sizes.
 
 ![Current connected-canvas editor showing a Bloom screenshot deck](example.png)

@@ -1,6 +1,6 @@
 ---
 name: app-store-screenshots
-description: Use when building App Store or Google Play screenshot pages, generating exportable marketing screenshots for iOS, macOS, and/or Android apps, or scaffolding a screenshot editor with Next.js. Triggers on app store, mac app store, play store, screenshots, marketing assets, html-to-image, phone mockup, mac mockup, android screenshots, feature graphic.
+description: Scaffold an App Store, Mac App Store, or Google Play screenshot editor. Use when the user wants store screenshots, a feature graphic, or a device-framed marketing deck for iOS, macOS, or Android.
 ---
 
 # App Store & Google Play Screenshots Generator
@@ -34,6 +34,8 @@ Supported devices out of the box:
 - **Android Tablet 7"** (portrait + landscape) — Google Play
 - **Android Tablet 10"** (portrait + landscape) — Google Play
 - **Feature Graphic** (1024×500 banner) — Google Play store listing header
+
+Canvas sizes, export sizes, and frame ratios live in `template/src/lib/constants.ts`. When a size is in question, read that file.
 
 ## Core Principle
 
@@ -130,178 +132,10 @@ cp "$PRESERVE_DIR/app-icon.png" public/app-icon.png 2>/dev/null || true
 
 After copying, upgrade or create `app-store-screenshots.json`. If an existing project file exists, coerce it in place. If no project file exists but old slide data is embedded in `src/lib/defaults.ts` or `src/app/page.tsx`, extract it best-effort into the template's project JSON before falling back to starter slides. Prefer old arrays or objects named `slides`, `screens`, `features`, `defaultSlides`, `appName`, `tagline`, `theme`, and screenshot paths. If the old implementation only has image files, sort `public/screenshots/**` by path and seed slides from those files.
 
-Use a small JSON script like this for the final project-state coercion:
+Run `migrate-project.cjs` beside this file for the final project-state coercion. The template test executes that same file.
 
 ```bash
-BACKUP_DIR="$BACKUP_DIR" node <<'NODE'
-const fs = require("fs");
-const path = require("path");
-
-const PROJECT_FILE = "app-store-screenshots.json";
-const DEFAULT_LOCALE = "en";
-const DEVICE_KEYS = ["iphone", "ipad", "tvos", "watchos", "carplay", "mac", "android", "android-7", "android-10", "feature-graphic"];
-const LAYOUTS = ["hero", "device-bottom", "device-top", "two-devices", "no-device", "split-landscape", "feature-graphic"];
-
-function readJson(file) {
-  try {
-    return JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch {
-    return null;
-  }
-}
-
-const templateState =
-  readJson(path.join(process.env.BACKUP_DIR || "", "template-app-store-screenshots.json")) ||
-  readJson(PROJECT_FILE) ||
-  {};
-const existingState = readJson(PROJECT_FILE) || {};
-const hasExplicitConnectedCanvas = typeof existingState.connectedCanvas === "boolean";
-const existingDecks =
-  existingState.slidesByDevice && typeof existingState.slidesByDevice === "object" && !Array.isArray(existingState.slidesByDevice)
-    ? existingState.slidesByDevice
-    : {};
-const hasExistingDecks = Object.keys(existingDecks).length > 0;
-const state = {
-  ...templateState,
-  ...existingState,
-  slidesByDevice: hasExistingDecks ? existingDecks : templateState.slidesByDevice || {},
-};
-
-const legacySlides =
-  Array.isArray(existingState.slides) ? existingState.slides :
-  Array.isArray(existingState.screens) ? existingState.screens :
-  Array.isArray(existingState.features) ? existingState.features :
-  null;
-
-if (legacySlides && !hasExistingDecks) {
-  state.slidesByDevice = {
-    iphone: legacySlides,
-  };
-}
-
-function localized(value) {
-  if (typeof value === "string") return { [DEFAULT_LOCALE]: value };
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return Object.fromEntries(Object.entries(value).filter(([, text]) => typeof text === "string"));
-  }
-  return {};
-}
-
-function cleanTransform(value) {
-  if (!value || typeof value !== "object") return undefined;
-  const { x, y, width, height, rotation, zIndex } = value;
-  if (![x, y, width, height].every((n) => typeof n === "number" && Number.isFinite(n))) return undefined;
-  return {
-    x,
-    y,
-    width: Math.max(1, width),
-    height: Math.max(1, height),
-    ...(typeof rotation === "number" && Number.isFinite(rotation) ? { rotation } : {}),
-    ...(typeof zIndex === "number" && Number.isFinite(zIndex) ? { zIndex } : {}),
-  };
-}
-
-function firstString(...values) {
-  return values.find((value) => typeof value === "string") || "";
-}
-
-// The editor refuses to load a deck with empty or repeated screen ids.
-function uniqueId(value, used) {
-  let id = typeof value === "string" && value.trim() ? value : "";
-  while (!id || used.has(id)) id = `migrated-${Math.random().toString(36).slice(2, 10)}`;
-  used.add(id);
-  return id;
-}
-
-function migrateSlide(slide, used) {
-  if (!slide || typeof slide !== "object" || Array.isArray(slide)) return null;
-  const transforms = {};
-  const rawTransforms = slide.transforms && typeof slide.transforms === "object" ? slide.transforms : {};
-  for (const [id, transform] of Object.entries(rawTransforms)) {
-    const cleaned = cleanTransform(transform);
-    if (["caption", "device", "deviceSecondary", "callout"].includes(id) && cleaned) transforms[id] = cleaned;
-  }
-  const textIds = new Set();
-  const textElements = Array.isArray(slide.textElements)
-    ? slide.textElements
-        .map((element) => {
-          if (!element || typeof element !== "object" || Array.isArray(element)) return null;
-          const transform = cleanTransform(element.transform);
-          if (!transform) return null;
-          return {
-            ...element,
-            id: uniqueId(element.id, textIds),
-            text: localized(element.text),
-            transform,
-            fontSize: Number.isFinite(element.fontSize) && element.fontSize > 0 ? element.fontSize : undefined,
-            fontWeight: Number.isFinite(element.fontWeight) && element.fontWeight > 0 ? element.fontWeight : undefined,
-          };
-        })
-        .filter(Boolean)
-    : undefined;
-
-  const imageIds = new Set();
-  const imageElements = Array.isArray(slide.imageElements)
-    ? slide.imageElements.map((element) => {
-        if (!element || typeof element !== "object" || Array.isArray(element) || typeof element.src !== "string") return null;
-        const transform = cleanTransform(element.transform);
-        return transform ? { ...element, id: uniqueId(element.id, imageIds), transform } : null;
-      }).filter(Boolean)
-    : undefined;
-
-  return {
-    ...slide,
-    id: uniqueId(slide.id, used),
-    layout: LAYOUTS.includes(slide.layout) ? slide.layout : "device-bottom",
-    label: localized(slide.label),
-    headline: localized(slide.headline || slide.title || slide.caption || slide.copy),
-    screenshot: firstString(slide.screenshot, slide.image, slide.src, slide.path),
-    screenshotSecondary: typeof slide.screenshotSecondary === "string" ? slide.screenshotSecondary : undefined,
-    inverted: typeof slide.inverted === "boolean" ? slide.inverted : undefined,
-    ...(Object.keys(transforms).length ? { transforms } : { transforms: undefined }),
-    ...(textElements && textElements.length ? { textElements } : { textElements: undefined }),
-    ...(imageElements && imageElements.length ? { imageElements } : { imageElements: undefined }),
-    // The editor clamps magnifier values on load; only a non-object would be rejected.
-    callout: slide.callout && typeof slide.callout === "object" && !Array.isArray(slide.callout) ? slide.callout : undefined,
-  };
-}
-
-state.schemaVersion = 2;
-state.connectedCanvas = hasExplicitConnectedCanvas ? existingState.connectedCanvas : false;
-// Unique codes like "en", "pt-BR", "zh_Hans"; anything else makes the editor refuse the file.
-const LOCALE_CODE = /^[a-zA-Z0-9]+(?:[-_][a-zA-Z0-9]+)*$/;
-state.locales = Array.isArray(state.locales)
-  ? [...new Set(state.locales.filter((locale) => typeof locale === "string" && LOCALE_CODE.test(locale)))]
-  : [];
-if (!state.locales.length) state.locales = [DEFAULT_LOCALE];
-state.locale = state.locales.includes(state.locale) ? state.locale : state.locales[0];
-state.device = DEVICE_KEYS.includes(state.device) ? state.device : "iphone";
-if (state.orientation !== "portrait" && state.orientation !== "landscape") delete state.orientation;
-for (const key of ["appName", "themeId", "appIcon"]) {
-  if (state[key] !== undefined && typeof state[key] !== "string") delete state[key];
-}
-// The feature graphic only shows an icon that `appIcon` points at.
-if (!state.appIcon && fs.existsSync(path.join("public", "app-icon.png"))) state.appIcon = "/app-icon.png";
-
-if (state.slidesByDevice && typeof state.slidesByDevice === "object") {
-  for (const [device, slides] of Object.entries(state.slidesByDevice)) {
-    // The editor only accepts known device decks; the backup keeps the original.
-    if (!DEVICE_KEYS.includes(device)) {
-      delete state.slidesByDevice[device];
-      continue;
-    }
-    const used = new Set();
-    state.slidesByDevice[device] = Array.isArray(slides) ? slides.map((slide) => migrateSlide(slide, used)).filter(Boolean) : [];
-  }
-}
-
-if (!state.slidesByDevice[state.device]) {
-  const firstDeviceWithSlides = DEVICE_KEYS.find((device) => state.slidesByDevice[device]?.length);
-  if (firstDeviceWithSlides) state.device = firstDeviceWithSlides;
-}
-
-fs.writeFileSync(PROJECT_FILE, JSON.stringify(state, null, 2) + "\n");
-NODE
+BACKUP_DIR="$BACKUP_DIR" node "<SKILL_DIR>/migrate-project.cjs"
 ```
 
 If `package.json` existed before the template copy, merge it after the project-state coercion instead of leaving a blind overwrite. Keep the template's `dev`, `build`, and `start` scripts and all editor dependencies, then add any old non-conflicting scripts and dependencies from the backed-up `package.json`.
@@ -379,7 +213,7 @@ Ask the user these. Do not proceed until you have answers:
 2. **App icon** — "Where is your app icon PNG?"
 3. **App name** — "What's the app called?"
 4. **Feature list** — "List your app's features in priority order. What's the #1 thing your app does?"
-5. **Style direction** — "What style do you want? You can either (a) pick one of the named deep-spec styles, or (b) describe your own vibe in your own words (warm/organic, dark/moody, clean/minimal, bold/colorful, plus any reference apps you like) and I'll build a custom palette. The template also ships with palette presets in the toolbar theme picker: the generic `clean-light`, `dark-bold`, `warm-editorial`, `ocean-fresh`, and `bloom-roast`, plus one preset per named style (same id as the style slug). The named deep specs live in `style-prompts/` — see `style-prompts.md` for the full index. Currently available: Retro Rubberhose Mascot, Moody Curated Dating, Paper Sticker Skeuomorphic, Dreamy Pastel Couples, Hand-Drawn Editorial Tasks, Glossy 3D K-Beauty Creator, Liquid Glass Aurora, Swiss Grid Bold, Neon Athletic Night, Magazine Cover Editorial, Candy Pop Social, Soft Clay Wellness, Midnight Glow Pro, Risograph Zine, Bento Keynote Grid, Toybox Primary, Quiet Japandi, Vintage Travel Poster. If the user names one of these — or describes something that clearly matches one — read `style-prompts/_QUALITY_BAR.md` first, then the matching deep spec file, and apply its entire spec (palette, gradients, shadows, rotations, per-slide breakdown). If the user describes a fully custom style, fall back to the General Visual Design Principles below and pick the closest deep spec as a starting reference."
+5. **Style direction** — Ask whether they want a named style or their own words (warm, dark, minimal, bold, plus any reference apps). Toolbar presets include `clean-light`, `dark-bold`, `warm-editorial`, `ocean-fresh`, `bloom-roast`, and one preset per named style (same id as the slug). Read [`style-prompts.md`](./style-prompts.md) for the index and the category table, and offer a match from that file. If they name a style or the description clearly matches one, read `style-prompts/_QUALITY_BAR.md` first, then the matching deep spec, and apply the whole spec. If the style is custom, use the Visual Design Principles below and the closest deep spec as the starting reference.
 
 ### Optional
 
@@ -401,7 +235,11 @@ Ask the user these. Do not proceed until you have answers:
 Priority: **bun > pnpm > yarn > npm**.
 
 ```bash
-which bun && echo bun || which pnpm && echo pnpm || which yarn && echo yarn || echo npm
+if command -v bun >/dev/null 2>&1; then echo bun
+elif command -v pnpm >/dev/null 2>&1; then echo pnpm
+elif command -v yarn >/dev/null 2>&1; then echo yarn
+else echo npm
+fi
 ```
 
 ### Copy the Template
@@ -480,34 +318,7 @@ Inside the editor the user will write headlines themselves, but they often need 
 3. **3-5 words per line.** Must be readable at thumbnail size in the App Store.
 4. **Line breaks are intentional.** Newlines in the textarea map directly to visible breaks.
 
-### Three Approaches
-
-| Type | What it does | Example |
-|------|-------------|---------|
-| **Paint a moment** | You picture yourself doing it | "Check your coffee without opening the app." |
-| **State an outcome** | What your life looks like after | "A home for every coffee you buy." |
-| **Kill a pain** | Name a problem and destroy it | "Never waste a great bag of coffee." |
-
-### Bad-to-Better
-
-| Weak | Better | Why |
-|------|--------|-----|
-| Track habits and stay motivated | Keep your streak alive | one idea, faster to parse |
-| Organize tasks with AI summaries | Turn notes into next steps | outcome-first, less jargon |
-| Save recipes with tags and favorites | Find dinner fast | sells the benefit, not the UI |
-
-### Narrative Arc
-
-The user's slide deck should follow a rough arc (skip slots that don't fit):
-
-| Slot | Purpose |
-|------|---------|
-| #1 | **Hero / Main Benefit** — the ONLY slide most people see |
-| #2 | **Differentiator** — what makes the app unique |
-| #3 | **Ecosystem** — widgets, watch, extensions (skip if N/A) |
-| #4+ | **Core Features** — one per slide, most important first |
-| 2nd-to-last | **Trust Signal** — "made for people who [X]" |
-| Last | **More Features** — pills listing extras (skip if few features) |
+Deck arcs, the three headline approaches, and the weak-to-better table live only in `copy-ideas.md`.
 
 ### Layout Variation
 
@@ -524,29 +335,7 @@ Never repeat the same layout twice in a row. Use 1-2 `inverted` (dark) slides fo
 
 ### Cross-Screen / Cross-Canvas Composition
 
-Use the connected canvas as a design tool during Step 3, after the narrative arc and layout rhythm are chosen and before final export. For most decks with **5+ slides**, plan **one** tasteful cross-screen moment by default. For 8-10 slide decks, use at most **two**. For short, formal, or compliance-heavy decks, zero is fine. The goal is "these screenshots belong together," not "one giant poster chopped into pieces."
-
-Good cross-screen patterns:
-- An oversized phone, tablet, or screenshot mosaic bridges two adjacent screens by 10-30% of its width, while each exported crop still reads as a complete ad.
-- A background horizon, photo, gradient, doodle path, waveform, starfield, sticker trail, or map route continues across the seam.
-- A mascot, 3D object, floating chip, or notification peeks from one screen into the next as a secondary visual, not the whole message.
-- Related ideas form a pair: problem → solution, before → after, overview → detail, plan → result.
-- The seam passes through negative space, a soft shadow, a simple object body, or a non-critical decorative area.
-
-Bad cross-screen patterns:
-- Splitting headlines, app names, prices, legal text, ratings, CTAs, or critical UI across a seam.
-- Centering one giant phone on the seam so each crop shows only a half-device and no clear benefit.
-- Using cross-screen movement on every slide; it becomes a gimmick and makes the deck harder to scan.
-- Cutting through faces, mascot eyes, key chart numbers, product claims, or app-store-required information.
-- Requiring the viewer to understand the carousel as one uninterrupted poster. Every exported PNG must still pass the one-second standalone test.
-- Letting shadows, stickers, or partial objects look accidentally clipped. If it crosses a boundary, make the bleed deliberate with scale, shadow, rotation, or continuation.
-
-Placement rules:
-- Use adjacent screens only unless a deliberate 3-screen panorama is the entire concept.
-- Keep all text fully inside a single exported screen with safe margins.
-- Let 10-30% of a non-critical visual cross the seam; go beyond 40% only for backgrounds, paths, or abstract decoration.
-- If adjacent screens have different background colors, bridge them with a shared object, matching shadow direction, or a designed transition band.
-- Review both views: the zoomed-out connected canvas must look cohesive, and each individual export must still sell one idea.
+After the arc and layout rhythm are chosen, follow `_QUALITY_BAR.md` §2. That section is the frequency, seam, and standalone rule. Every exported PNG still sells one idea on its own.
 
 ## Visual Design Principles
 
@@ -580,14 +369,9 @@ Top decks layer at least one of these on most slides:
 
 A bare phone on a bare bg with a bare headline is the default-skill output. Add one accent.
 
-### 5. Phone framing is a deliberate choice — vary it across the deck
+### 5. Phone framing varies by placement
 
-Three common framings, each carries a different feeling:
-- **Bezelless / minimal frame** — maximizes UI legibility, modern (Arc, Linktree, Gentler)
-- **Tilted floating phone with soft shadow** — product / advertorial feel (Superlist, CRED hero)
-- **Full device with visible bezel, dead-center** — editorial, premium (CRED, NB Camera)
-
-Mix at least two framings across the deck.
+Every phone-bearing slide uses the template's default iPhone frame (`public/mockup.png` via the `Phone` component). `_QUALITY_BAR.md` §7 forbids a bezelless rectangle, a paper cutout, or a custom-drawn frame. Vary the deck with tilt, shadow, and which edge the phone anchors to.
 
 ### 6. Proof anchors the hero, nothing else
 
@@ -611,13 +395,13 @@ Every 2–3 slides, drop the phone and use a different hero element to keep visu
 
 The closer is almost always one of two things:
 - **Feature wall** — a vertical list of one-word features styled as big type ("Real-time collaboration / Offline support / Widgets / Integrations…")
-- **Phone mosaic** — multiple bezelless mini-screenshots arranged in a grid to convey "look at all the things this does"
+- **Phone mosaic** — several smaller copies of the default phone frame in a grid, so the closer shows range
 
 Pick one. Don't make the last slide another single-feature hero — it wastes the spot.
 
 ### 10. Thumbnail test (mandatory before export)
 
-Shrink the slide to ~160px wide (App Store search-result size). Squint. Can you read the headline? Can you tell what the app does in under a second? If not, the headline is too long, the type is too thin, or there's no contrast between text and background. Fix before exporting.
+Run `_QUALITY_BAR.md` §11 before export. Shrink the PNG to **220px** wide and answer, in one sentence, what style this is, what the app does, and why someone would tap it. If an answer fails, fix type size or contrast first.
 
 ## Step 4: Localization
 
@@ -738,55 +522,13 @@ There are two migration modes:
 - **Passive runtime migration:** when a user opens an old project in the current editor, keep `connectedCanvas: false` for pre-v2 JSON so old exports remain visually stable.
 - **Explicit skill migration:** when Step 0 detects an old implementation and the user answers **Yes**, upgrade the UI in place and write `schemaVersion: 2`. Preserve an existing explicit `connectedCanvas` boolean; otherwise write `connectedCanvas: false` without asking more product/design questions.
 
-For explicit in-place upgrades, copy the current template's `src/components/editor/`, `src/lib/`, app routes, config, and package files into the project while preserving user assets and project JSON. If the old project had custom themes, merge those `THEMES` entries into `src/lib/constants.ts`; otherwise the editor falls back to `clean-light` and warns in the browser. Then run the app once and confirm `schemaVersion: 2` and a boolean `connectedCanvas` are present.
+For explicit in-place upgrades, follow Step 0 and run `migrate-project.cjs`. Copy the current template's `src/components/editor/`, `src/lib/`, app routes, config, and package files into the project while preserving user assets and project JSON. If the old project had custom themes, merge those `THEMES` entries into `src/lib/constants.ts`; otherwise the editor falls back to `clean-light` and warns in the browser. Then run the app once and confirm `schemaVersion: 2` and a boolean `connectedCanvas` are present.
 
 ## Template Reference
 
-The template structure (after copy):
+After the copy, read `template/README.md` for how the editor behaves. Device sizes, themes, and frame ratios live in `src/lib/constants.ts`. Deck content lives in `app-store-screenshots.json`. `src/lib/defaults.ts` is only the fallback when that file is missing. For which source file owns a bug, use the task map in the repository `AGENTS.md`.
 
-```
-project/
-├── package.json
-├── tsconfig.json
-├── next.config.mjs
-├── tailwind.config.ts
-├── postcss.config.mjs
-├── components.json              # ShadCN config (for future `shadcn add`)
-├── public/
-│   ├── mockup.png               # iPhone bezel (do NOT replace without re-measuring PHONE_SCREEN)
-│   ├── app-icon.png             # → user supplies
-│   ├── fonts/imported/          # Fonts imported from the toolbar (gitignored; uploaded screenshots are tracked in generated projects)
-│   └── screenshots/...
-└── src/
-    ├── app/
-    │   ├── layout.tsx           # Font + root layout
-    │   ├── page.tsx             # Renders <ScreenshotEditor />
-    │   └── globals.css          # Tailwind + ShadCN tokens
-    ├── components/
-    │   ├── editor/
-    │   │   ├── screenshot-editor.tsx   # Top-level editor (state, autosave, export)
-    │   │   ├── toolbar.tsx             # Platform tabs, device select, theme, font, locale, undo/redo, export
-    │   │   ├── sidebar.tsx             # Screen list with @dnd-kit reordering
-    │   │   ├── slide-thumb.tsx         # Draggable screen card
-    │   │   ├── preview-stage.tsx       # ResizeObserver-scaled connected canvas
-    │   │   ├── inspector.tsx           # Right-pane controls for active slide
-    │   │   ├── screenshot-picker.tsx   # File drop + picker
-    │   │   ├── background-controls.tsx # Per-slide theme / alternate / custom background
-    │   │   ├── font-importer.tsx       # Hidden input behind the toolbar's "Import font…"
-    │   │   ├── image-element-canvas.tsx # Image overlay content (+ create-image-mask.ts edge fade)
-    │   │   ├── slide-canvas.tsx        # Data-driven screen/deck renderer (all layouts)
-    │   │   └── device-frames.tsx       # Phone, IPad, AppleTV, AppleWatch, CarPlayScreen, MacWindow, Android
-    │   └── ui/                         # Minimal ShadCN primitives (button, select, etc.)
-    └── lib/
-        ├── constants.ts                # Canvas sizes, export sizes, themes, screenshot fonts, frame ratios
-        ├── defaults.ts                 # Initial slide decks per device
-        ├── types.ts                    # Slide / ProjectState / Theme types
-        ├── storage.ts                  # useProject() — autosave + undo/redo history
-        ├── image-cache.ts              # preloadImages + img() helper
-        ├── contrast.ts                 # Readable caption colours on custom backgrounds
-        ├── export-render.ts            # Slide → PNG; waits for every screenshot to paint
-        └── utils.ts                    # cn() helper
-```
+Leave `public/mockup.png` in place unless `PHONE_SCREEN` is re-measured in the same change.
 
 ## Hand-off Behavior
 
@@ -803,5 +545,4 @@ When you finish scaffolding, **start the dev server** (`bun dev` / `pnpm dev` / 
 4. Any user-supplied screenshots that didn't match the expected filenames (so they can rename or use the in-editor drop target).
 5. Point them at the **Export bundle** button once they're happy with the layouts.
 6. **Invite further edits:** say something like _"Feel free to ask me to make any changes you'd like to the screenshots — copy, layout, palette, anything. I can iterate with you."_
-7. **Showcase callout** (always include this, verbatim spirit):
-   > Check out apps generated by this skill here: https://www.parthjadhav.com/products/app-store-screenshots — and tag **@parthjadhav8** on Twitter if you want your app to be added to the showcase.
+7. **Credit, when they ask where the editor came from.** Say it comes from Parth Jadhav's [app-store-screenshots](https://github.com/ParthJadhav/app-store-screenshots) skill and give that link. Mention the showcase only if they ask to be listed.

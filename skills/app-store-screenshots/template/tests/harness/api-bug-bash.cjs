@@ -110,10 +110,12 @@ async function check(name, run) { await run(); console.log('PASS', name); passed
       }
     });
     await check('documented migration handles null overlays and duplicate element IDs', async () => {
-      const skill = await fs.readFile(path.join(__dirname,'../../../SKILL.md'),'utf8').catch(error => { if (error.code !== 'ENOENT') throw error; return null; });
-      const source = skill
-        ? skill.match(/BACKUP_DIR="\$BACKUP_DIR" node <<'NODE'\n([\s\S]*?)\nNODE/)[1]
-        : await fs.readFile(path.join(__dirname,'migration-fixture.cjs'),'utf8');
+      const sharedPath = path.join(__dirname,'../../../migrate-project.cjs');
+      const fixturePath = path.join(__dirname,'migration-fixture.cjs');
+      const shared = await fs.readFile(sharedPath,'utf8').catch(error => { if (error.code !== 'ENOENT') throw error; return null; });
+      const fixture = await fs.readFile(fixturePath,'utf8');
+      if (shared !== null) assert.equal(fixture, shared, 'migration-fixture.cjs must match migrate-project.cjs');
+      const source = shared ?? fixture;
       const temporary = await fs.mkdtemp(path.join(os.tmpdir(),'screenshot-migration-'));
       const transform = {x:10,y:20,width:0,height:40};
       try {
