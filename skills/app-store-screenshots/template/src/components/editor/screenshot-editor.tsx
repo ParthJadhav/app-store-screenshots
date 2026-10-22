@@ -365,6 +365,105 @@ export function ScreenshotEditor() {
     [setState],
   );
 
+  const deleteDevice = React.useCallback(
+    (slideId: string, elementId: "device" | "deviceSecondary") => {
+      updateSlide(slideId, (slide) => {
+        const nextTransforms = { ...(slide.transforms || {}) };
+
+        if (elementId === "deviceSecondary" || slide.layout === "two-devices") {
+          if (elementId === "deviceSecondary") {
+            delete nextTransforms.deviceSecondary;
+            return {
+              layout: "hero",
+              screenshotSecondary: undefined,
+              transforms: Object.keys(nextTransforms).length ? nextTransforms : undefined,
+            };
+          } else {
+            // Front device deleted: promote back device
+            const nextScreenshot = slide.screenshotSecondary || slide.screenshot;
+            if (nextTransforms.deviceSecondary) {
+              nextTransforms.device = nextTransforms.deviceSecondary;
+            } else {
+              delete nextTransforms.device;
+            }
+            delete nextTransforms.deviceSecondary;
+            return {
+              layout: "hero",
+              screenshot: nextScreenshot,
+              screenshotSecondary: undefined,
+              transforms: Object.keys(nextTransforms).length ? nextTransforms : undefined,
+            };
+          }
+        } else {
+          // Lone device deleted -> set layout to no-device
+          delete nextTransforms.device;
+          return {
+            layout: "no-device",
+            transforms: Object.keys(nextTransforms).length ? nextTransforms : undefined,
+          };
+        }
+      });
+
+      setSelectedElement((cur) =>
+        cur?.slideId === slideId &&
+        (cur.elementId === elementId || cur.elementId === "device" || cur.elementId === "deviceSecondary")
+          ? null
+          : cur,
+      );
+      toast.info(elementId === "deviceSecondary" ? "Removed second device" : "Removed device");
+    },
+    [updateSlide],
+  );
+
+  const deleteElement = React.useCallback(
+    (slideId: string, elementId: ElementId) => {
+      if (elementId === "device" || elementId === "deviceSecondary") {
+        deleteDevice(slideId, elementId);
+        return;
+      }
+      if (elementId === "callout") {
+        updateSlide(slideId, (slide) => {
+          const nextTransforms = { ...(slide.transforms || {}) };
+          delete nextTransforms.callout;
+          return {
+            callout: undefined,
+            transforms: Object.keys(nextTransforms).length ? nextTransforms : undefined,
+          };
+        });
+        setSelectedElement((cur) =>
+          cur?.slideId === slideId && cur?.elementId === elementId ? null : cur,
+        );
+        toast.info("Removed magnifier");
+        return;
+      }
+      if (isTextElementId(elementId)) {
+        const textId = textElementKey(elementId);
+        updateSlide(slideId, (slide) => {
+          const next = (slide.textElements || []).filter((el) => el.id !== textId);
+          return { textElements: next.length ? next : undefined };
+        });
+        setSelectedElement((cur) =>
+          cur?.slideId === slideId && cur?.elementId === elementId ? null : cur,
+        );
+        toast.info("Removed text element");
+        return;
+      }
+      if (isImageElementId(elementId)) {
+        const imgId = imageElementKey(elementId);
+        updateSlide(slideId, (slide) => {
+          const next = (slide.imageElements || []).filter((el) => el.id !== imgId);
+          return { imageElements: next.length ? next : undefined };
+        });
+        setSelectedElement((cur) =>
+          cur?.slideId === slideId && cur?.elementId === elementId ? null : cur,
+        );
+        toast.info("Removed image element");
+        return;
+      }
+    },
+    [deleteDevice, updateSlide],
+  );
+
   // ---------- Keyboard shortcuts ----------
 
   React.useEffect(() => {
@@ -411,16 +510,21 @@ export function ScreenshotEditor() {
           e.preventDefault();
           duplicateSlide(activeSlide.id);
         }
-      } else if ((e.key === "Backspace" || e.key === "Delete") && (e.metaKey || e.ctrlKey)) {
-        if (activeSlide) {
+      } else if (e.key === "Backspace" || e.key === "Delete") {
+        if (mod) {
+          if (activeSlide) {
+            e.preventDefault();
+            deleteSlide(activeSlide.id);
+          }
+        } else if (selectedElement && selectedElement.elementId !== "caption") {
           e.preventDefault();
-          deleteSlide(activeSlide.id);
+          deleteElement(selectedElement.slideId, selectedElement.elementId);
         }
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeSlide, currentSlides, duplicateSlide, deleteSlide, exporting, undo, redo]);
+  }, [activeSlide, currentSlides, duplicateSlide, deleteSlide, selectedElement, deleteElement, exporting, undo, redo]);
 
   // ---------- Export ----------
 
@@ -794,6 +898,8 @@ export function ScreenshotEditor() {
               onTextElementTextChange={patchTextElementText}
               onElementChange={patchElementTransform}
               onSelectElement={setSelectedElement}
+              onDeleteDevice={deleteDevice}
+              onDeleteElement={deleteElement}
             />
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-sm text-muted-foreground">
@@ -824,6 +930,7 @@ export function ScreenshotEditor() {
                   elementId ? { slideId: activeSlide.id, elementId } : null,
                 )
               }
+              onDeleteDevice={(id) => deleteDevice(activeSlide.id, id)}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">

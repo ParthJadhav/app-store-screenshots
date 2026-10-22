@@ -93,6 +93,7 @@ type Props = {
   /** Patch computed from the slide's latest state (safe after async work). */
   onUpdate: (update: (slide: Slide) => Partial<Slide>) => void;
   onSelectElement: (id: ElementId | null) => void;
+  onDeleteDevice?: (id: "device" | "deviceSecondary") => void;
 };
 
 const ELEMENT_LABEL: Record<BuiltInElementId, string> = {
@@ -114,6 +115,7 @@ export function Inspector({
   onChange,
   onUpdate,
   onSelectElement,
+  onDeleteDevice,
 }: Props) {
   const isFeatureGraphic = device === "feature-graphic" || slide.layout === "feature-graphic";
   const isNoDevice = slide.layout === "no-device";
@@ -135,6 +137,45 @@ export function Inspector({
 
   function setLocaleField(key: "label" | "headline", value: string) {
     onChange({ [key]: writeLocalized(slide[key], locale, value) } as Partial<Slide>);
+  }
+
+  function handleDeleteDevice(id: "device" | "deviceSecondary") {
+    if (onDeleteDevice) {
+      onDeleteDevice(id);
+      return;
+    }
+    const nextTransforms = { ...(slide.transforms || {}) };
+    if (id === "deviceSecondary" || slide.layout === "two-devices") {
+      if (id === "deviceSecondary") {
+        delete nextTransforms.deviceSecondary;
+        onChange({
+          layout: "hero",
+          screenshotSecondary: undefined,
+          transforms: Object.keys(nextTransforms).length ? nextTransforms : undefined,
+        });
+      } else {
+        const nextScreenshot = slide.screenshotSecondary || slide.screenshot;
+        if (nextTransforms.deviceSecondary) {
+          nextTransforms.device = nextTransforms.deviceSecondary;
+        } else {
+          delete nextTransforms.device;
+        }
+        delete nextTransforms.deviceSecondary;
+        onChange({
+          layout: "hero",
+          screenshot: nextScreenshot,
+          screenshotSecondary: undefined,
+          transforms: Object.keys(nextTransforms).length ? nextTransforms : undefined,
+        });
+      }
+    } else {
+      delete nextTransforms.device;
+      onChange({
+        layout: "no-device",
+        transforms: Object.keys(nextTransforms).length ? nextTransforms : undefined,
+      });
+    }
+    onSelectElement(null);
   }
 
   return (
@@ -222,11 +263,62 @@ export function Inspector({
 
         <TypographySection slide={slide} isFeatureGraphic={isFeatureGraphic} onChange={onChange} />
 
+        {isNoDevice && !isFeatureGraphic && (
+          <div className="flex items-center justify-between rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+            <span>No device in this layout</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                onChange({ layout: "hero" });
+                onSelectElement("device");
+              }}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              Add device
+            </Button>
+          </div>
+        )}
+
         {!isFeatureGraphic && !isNoDevice && (
           <div className="space-y-1.5">
-            <Label className="text-xs">
-              {slide.layout === "two-devices" ? "Front device screenshot" : "Screenshot"}
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">
+                {slide.layout === "two-devices" ? "Front device screenshot" : "Screenshot"}
+              </Label>
+              {slide.layout !== "two-devices" ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() =>
+                    onChange({
+                      layout: "two-devices",
+                      screenshotSecondary: slide.screenshotSecondary || slide.screenshot,
+                    })
+                  }
+                  title="Add second device"
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  Add 2nd device
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDeleteDevice("device")}
+                  title="Remove front device"
+                >
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  Remove device
+                </Button>
+              )}
+            </div>
             <ScreenshotPicker
               label="Primary"
               value={slide.screenshot}
@@ -238,10 +330,23 @@ export function Inspector({
         )}
 
         {slide.layout === "two-devices" && (
-          <div className="space-y-1.5">
-            <Label className="text-xs">
-              {companion ? `${DEVICE_LABEL[companion]} screenshot` : "Back device screenshot"}
-            </Label>
+          <div className="space-y-1.5 rounded-md border border-border/60 bg-muted/20 p-2.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium">
+                {companion ? `${DEVICE_LABEL[companion]} screenshot` : "Back device screenshot"}
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-xs text-muted-foreground hover:text-destructive"
+                onClick={() => handleDeleteDevice("deviceSecondary")}
+                title="Remove back device"
+              >
+                <Trash2 className="mr-1 h-3 w-3" />
+                Remove device
+              </Button>
+            </div>
             <ScreenshotPicker
               label={companion ? DEVICE_LABEL[companion] : "Secondary (back layer)"}
               value={slide.screenshotSecondary || ""}
@@ -275,6 +380,7 @@ export function Inspector({
             onChange={onChange}
             onUpdate={onUpdate}
             onSelectElement={onSelectElement}
+            onDeleteDevice={handleDeleteDevice}
           />
         )}
 
@@ -355,6 +461,7 @@ function ElementTransformControls({
   onChange,
   onUpdate,
   onSelectElement,
+  onDeleteDevice,
 }: {
   slide: Slide;
   defaultTextColor: string;
@@ -365,7 +472,9 @@ function ElementTransformControls({
   onChange: (patch: Partial<Slide>) => void;
   onUpdate: (update: (slide: Slide) => Partial<Slide>) => void;
   onSelectElement: (id: ElementId | null) => void;
+  onDeleteDevice?: (id: "device" | "deviceSecondary") => void;
 }) {
+  const isFeatureGraphic = device === "feature-graphic" || slide.layout === "feature-graphic";
   const present: ElementId[] = ["caption"];
   if (slide.layout !== "no-device") present.push("device");
   if (slide.layout === "two-devices") present.push("deviceSecondary");
@@ -578,6 +687,30 @@ function ElementTransformControls({
         <div className="flex items-center justify-between gap-2">
           <Label className="text-xs font-semibold">Elements</Label>
           <div className="flex items-center gap-1.5">
+            {!isFeatureGraphic && slide.layout !== "two-devices" && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 shrink-0 px-2 text-xs"
+                onClick={() => {
+                  if (slide.layout === "no-device") {
+                    onChange({ layout: "hero" });
+                    onSelectElement("device");
+                  } else {
+                    onChange({
+                      layout: "two-devices",
+                      screenshotSecondary: slide.screenshotSecondary || slide.screenshot,
+                    });
+                    onSelectElement("deviceSecondary");
+                  }
+                }}
+                title={slide.layout === "no-device" ? "Add device" : "Add second device"}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Device
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -638,6 +771,7 @@ function ElementTransformControls({
           onDeleteImage={() => {
             if (activeImageElement) deleteImageElement(activeImageElement);
           }}
+          onDeleteDevice={onDeleteDevice}
         />
       ) : (
         <div className="rounded border border-dashed bg-background/40 p-4 text-center text-[11px] text-muted-foreground">
@@ -664,6 +798,7 @@ function ActiveElementPanel({
   onImagePatch,
   onImageSource,
   onDeleteImage,
+  onDeleteDevice,
 }: {
   activeId: ElementId;
   transform: ElementTransform | undefined;
@@ -680,6 +815,7 @@ function ActiveElementPanel({
   onImagePatch: (patch: Partial<ImageElement>) => void;
   onImageSource: (src: string) => void;
   onDeleteImage: () => void;
+  onDeleteDevice?: (id: "device" | "deviceSecondary") => void;
 }) {
   const engaged = !!transform;
   const rotation = transform?.rotation ?? 0;
@@ -703,6 +839,19 @@ function ActiveElementPanel({
             aria-label={textElement ? "Delete text element" : "Delete image element"}
           >
             <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        ) : activeId === "device" || activeId === "deviceSecondary" ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-1.5 text-xs text-muted-foreground hover:text-destructive"
+            onClick={() => onDeleteDevice?.(activeId)}
+            title={activeId === "deviceSecondary" ? "Remove second device" : "Remove device"}
+            aria-label={activeId === "deviceSecondary" ? "Remove second device" : "Remove device"}
+          >
+            <Trash2 className="mr-1 h-3.5 w-3.5" />
+            Delete device
           </Button>
         ) : !engaged ? (
           <span className="text-[10px] text-muted-foreground">drag to enable</span>

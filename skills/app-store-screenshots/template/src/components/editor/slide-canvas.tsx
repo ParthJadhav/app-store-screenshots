@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { Rnd } from "react-rnd";
-import { RotateCw } from "lucide-react";
+import { RotateCw, Trash2 } from "lucide-react";
 import type {
   BuiltInElementId,
   Device,
@@ -170,6 +170,8 @@ type EditHandlers = {
   onTextElementTextChange?: (id: string, v: string) => void;
   onElementChange?: (id: ElementId, t: ElementTransform) => void;
   onSelectElement?: (id: ElementId | null) => void;
+  onDeleteDevice?: (id: "device" | "deviceSecondary") => void;
+  onDeleteElement?: (id: ElementId) => void;
 };
 
 type Props = {
@@ -202,6 +204,8 @@ type DeckEditHandlers = {
   onElementChange?: (slideId: string, id: ElementId, t: ElementTransform) => void;
   onSelectElement?: (element: SelectedElement | null) => void;
   onSelectScreen?: (slideId: string) => void;
+  onDeleteDevice?: (slideId: string, id: "device" | "deviceSecondary") => void;
+  onDeleteElement?: (slideId: string, id: ElementId) => void;
 };
 
 type DeckCanvasProps = {
@@ -938,6 +942,8 @@ export function DeckCanvas({
                 edit?.onSelectScreen?.(slide.id);
                 edit?.onSelectElement?.(id ? { slideId: slide.id, elementId: id } : null);
               },
+              onDeleteDevice: (id) => edit?.onDeleteDevice?.(slide.id, id),
+              onDeleteElement: (id) => edit?.onDeleteElement?.(slide.id, id),
             }
           : undefined;
 
@@ -1383,6 +1389,7 @@ function SlideElements({
         allowOverflow
         selected={selectedElementId === id}
         onSelect={() => edit?.onSelectElement?.(id)}
+        onDelete={edit?.onDeleteDevice ? () => edit.onDeleteDevice?.(id) : undefined}
       >
         <DeviceDepth scene={companion ? { ...scene, tilt: 0 } : scene} cW={cW} accent={theme.accent}>
           <DeviceFrame
@@ -1419,6 +1426,7 @@ function SlideElements({
         allowOverflow
         selected={selectedElementId === "callout"}
         onSelect={() => edit?.onSelectElement?.("callout")}
+        onDelete={edit?.onDeleteElement ? () => edit.onDeleteElement?.("callout") : undefined}
       >
         <CalloutLoupe
           callout={callout}
@@ -1461,6 +1469,7 @@ function SlideElements({
         zIndex={zIndex}
         selected={selectedElementId === elementId}
         onSelect={() => edit?.onSelectElement?.(elementId)}
+        onDelete={edit?.onDeleteElement ? () => edit.onDeleteElement?.(elementId) : undefined}
         allowOverflow={allowCrossScreen}
       >
         <div
@@ -1527,6 +1536,7 @@ function SlideElements({
         zIndex={zIndex}
         selected={selectedElementId === elementId}
         onSelect={() => edit?.onSelectElement?.(elementId)}
+        onDelete={edit?.onDeleteElement ? () => edit.onDeleteElement?.(elementId) : undefined}
         allowOverflow={allowCrossScreen}
       >
         <ImageElementCanvas element={imageElement} editable={editable} />
@@ -1598,6 +1608,7 @@ function Movable({
   allowOverflow = false,
   selected = false,
   onSelect,
+  onDelete,
 }: {
   rect: Rect;
   boundsW: number;
@@ -1612,6 +1623,7 @@ function Movable({
   allowOverflow?: boolean;
   selected?: boolean;
   onSelect?: () => void;
+  onDelete?: () => void;
 }) {
   const rotationRef = React.useRef(rotation);
   React.useEffect(() => {
@@ -1755,6 +1767,30 @@ function Movable({
       >
         <RotateCw style={{ width: 14 / controlScale, height: 14 / controlScale }} />
       </button>
+      {onDelete && (
+        <button
+          type="button"
+          className="rnd-delete-handle"
+          style={{
+            left: -14 / controlScale,
+            top: -14 / controlScale,
+            width: 28 / controlScale,
+            height: 28 / controlScale,
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }}
+          title="Delete element"
+          aria-label="Delete element"
+        >
+          <Trash2 style={{ width: 14 / controlScale, height: 14 / controlScale }} />
+        </button>
+      )}
     </Rnd>
   );
 }

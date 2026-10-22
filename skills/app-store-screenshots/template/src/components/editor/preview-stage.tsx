@@ -34,6 +34,8 @@ type Props = {
   onTextElementTextChange: (slideId: string, id: string, v: string) => void;
   onElementChange: (slideId: string, id: ElementId, t: ElementTransform) => void;
   onSelectElement: (element: SelectedElement | null) => void;
+  onDeleteDevice?: (slideId: string, id: "device" | "deviceSecondary") => void;
+  onDeleteElement?: (slideId: string, id: ElementId) => void;
 };
 
 // Fits one full-resolution screen inside the viewport while keeping the whole
@@ -57,6 +59,8 @@ export function PreviewStage({
   onTextElementTextChange,
   onElementChange,
   onSelectElement,
+  onDeleteDevice,
+  onDeleteElement,
 }: Props) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const scrollerRef = React.useRef<HTMLDivElement>(null);
@@ -168,6 +172,8 @@ export function PreviewStage({
                 onElementChange,
                 onSelectElement,
                 onSelectScreen: handleCanvasActiveSlideChange,
+                onDeleteDevice,
+                onDeleteElement,
               }}
             />
           </div>

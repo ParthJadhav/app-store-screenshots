@@ -122,8 +122,50 @@
   cursor: grabbing;
 }
 
+.rnd-delete-handle {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  z-index: 20;
+  display: flex;
+  height: 28px;
+  width: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(239, 68, 68, 0.65);
+  background: rgba(255, 255, 255, 0.95);
+  color: #ef4444;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.2);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.rnd-editable:hover .rnd-delete-handle,
+.rnd-editable.rnd-selected .rnd-delete-handle,
+.rnd-delete-handle:focus-visible {
+  opacity: 1;
+}
+
+.rnd-delete-handle:hover,
+.rnd-delete-handle:focus-visible {
+  transform: scale(1.08);
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.rnd-delete-handle:active {
+  transform: scale(0.95);
+}
+
 /* Show a visible cursor outline on contenteditable text inside Rnd while focused. */
 .rnd-editable [contenteditable]:focus {
   box-shadow: 0 0 0 2px rgba(91, 124, 250, 0.45);
   border-radius: 2px;
 }
+
