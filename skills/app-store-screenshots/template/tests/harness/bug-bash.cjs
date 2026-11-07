@@ -135,7 +135,9 @@ const fixture = (extra = {}) => ({schemaVersion:2,appName:'Bug bash',themeId:'cl
    await page.getByRole('option',{name:'Custom color',exact:true}).click();
    await page.getByRole('textbox',{name:'Custom background hex color',exact:true}).fill('#FFFFFF');
    const caption=page.locator('main [contenteditable=plaintext-only]').first();
-   assert.equal(await caption.evaluate(el=>getComputedStyle(el).color),'rgb(23, 23, 23)');
+   // Inverted banners use light text; on a custom white background it must switch to readable text.
+   const contrast=await caption.evaluate(el=>{const lum=c=>{const [r,g,b]=c.match(/\d+/g).slice(0,3).map(v=>{v/=255;return v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4;});return 0.2126*r+0.7152*g+0.0722*b;};const [a,b]=[lum(getComputedStyle(el).color),lum('rgb(255,255,255)')].sort((x,y)=>y-x);return (a+0.05)/(b+0.05);});
+   assert.ok(contrast>=4.5,`caption contrast ${contrast.toFixed(2)} on white`);
    assert.equal(await caption.evaluate(el=>getComputedStyle(el.parentElement.parentElement.parentElement).backgroundColor),'rgb(255, 255, 255)');
    await page.locator('main [contenteditable=plaintext-only]').nth(1).focus();
    assert.match(await page.locator('main').innerText(),/Screen 2/);

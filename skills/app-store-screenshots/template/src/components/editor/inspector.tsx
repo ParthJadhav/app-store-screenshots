@@ -35,11 +35,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CANVAS, DEVICE_LABEL, LAYOUT_LABEL, isCreative, layoutHint, layoutLabel } from "@/lib/constants";
-import { DUO_COMPANION, duoGeometry, isDuoDevice } from "@/lib/frame-assets";
+import { DEVICES, canvasSize, deviceForOrientation, duoCompanion, isCreative, isDuoDevice, orientationOf } from "@/lib/devices";
+import { captureFits, duoGeometry } from "@/lib/frame-assets";
+import { elementRects, elementZ, getElementTransform, selectableLayouts, isFeatureGraphic as isBanner, layoutHint, layoutLabel, showsDevice } from "@/lib/layouts";
 import { COPY_IDEA_SLOTS } from "@/lib/copy-ideas";
 import { nid } from "@/lib/defaults";
-import { img } from "@/lib/image-cache";
+import { img, imgSize } from "@/lib/image-cache";
 import {
   isBuiltInElementId,
   imageElementKey,
@@ -77,8 +78,6 @@ import type {
 import { BackgroundControls } from "./background-controls";
 import { ScreenshotPicker } from "./screenshot-picker";
 import { CalloutControls } from "./callout-controls";
-import { DUO_FIT_TOLERANCE, captureFits } from "./device-frames";
-import { calloutAvailable, getCanvas, getElementTransform } from "./slide-canvas";
 
 type Props = {
   slide: Slide;
@@ -115,14 +114,11 @@ export function Inspector({
   onUpdate,
   onSelectElement,
 }: Props) {
-  const isFeatureGraphic = device === "feature-graphic" || slide.layout === "feature-graphic";
-  const isNoDevice = slide.layout === "no-device";
-  const layoutValue = device === "feature-graphic" ? "feature-graphic" : slide.layout;
-  const layoutOptions = (Object.keys(LAYOUT_LABEL) as SlideLayout[])
-    .filter((layout) => (device === "feature-graphic" ? layout === "feature-graphic" : layout !== "feature-graphic"))
-    .map((layout) => [layout, layoutLabel(layout, device)] as const);
+  const isFeatureGraphic = isBanner(slide, device);
+  const drawn = elementRects(slide, device, orientation);
+  const layoutOptions = selectableLayouts(device).map((layout) => [layout, layoutLabel(layout, device)] as const);
   // On iPhone Duo the back device is the other display, so it needs its own capture.
-  const companion = isDuoDevice(device) ? DUO_COMPANION[device] : null;
+  const companion = isDuoDevice(device) ? duoCompanion(device) : null;
   const localeLabel = slide.label?.[locale] ?? "";
   const localeHeadline = slide.headline?.[locale] ?? "";
   // When the active locale is empty, surface the fallback (typically en) as
@@ -146,14 +142,14 @@ export function Inspector({
             editing · {locale.toUpperCase()}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground">{layoutHint(layoutValue, device)}</p>
+        <p className="text-xs text-muted-foreground">{layoutHint(slide.layout, device)}</p>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Layout</Label>
           <Select
-            value={layoutValue}
+            value={slide.layout}
             onValueChange={(layout) => {
               const next = layout as SlideLayout;
               onChange({
@@ -222,10 +218,10 @@ export function Inspector({
 
         <TypographySection slide={slide} isFeatureGraphic={isFeatureGraphic} onChange={onChange} />
 
-        {!isFeatureGraphic && !isNoDevice && (
+        {(drawn.device || drawn.deviceSecondary) && (
           <div className="space-y-1.5">
             <Label className="text-xs">
-              {slide.layout === "two-devices" ? "Front device screenshot" : "Screenshot"}
+              {drawn.deviceSecondary ? "Front device screenshot" : "Screenshot"}
             </Label>
             <ScreenshotPicker
               label="Primary"
@@ -237,13 +233,13 @@ export function Inspector({
           </div>
         )}
 
-        {slide.layout === "two-devices" && (
+        {drawn.deviceSecondary && (
           <div className="space-y-1.5">
             <Label className="text-xs">
-              {companion ? `${DEVICE_LABEL[companion]} screenshot` : "Back device screenshot"}
+              {companion ? `${DEVICES[companion].label} screenshot` : "Back device screenshot"}
             </Label>
             <ScreenshotPicker
-              label={companion ? DEVICE_LABEL[companion] : "Secondary (back layer)"}
+              label={companion ? DEVICES[companion].label : "Secondary (back layer)"}
               value={slide.screenshotSecondary || ""}
               locale={locale}
               onChange={(v) => onChange({ screenshotSecondary: v })}
@@ -259,7 +255,7 @@ export function Inspector({
           device={device}
           orientation={orientation}
           locale={locale}
-          available={calloutAvailable(slide, device)}
+          available={showsDevice(slide, device)}
           onChange={onChange}
           onSelectElement={onSelectElement}
         />
@@ -295,13 +291,13 @@ export function Inspector({
 // iPhone Duo frames show a capture uncropped only when it came from that display.
 function CaptureNote({ device, src }: { device: Device; src: string }) {
   if (!isDuoDevice(device)) return null;
-  const { w, h } = CANVAS[device];
-  const fits = !src || captureFits(src, duoGeometry(device).screenAspect, DUO_FIT_TOLERANCE);
+  const { w, h } = DEVICES[device].canvas;
+  const fits = !src || captureFits(imgSize(src), duoGeometry(device).screenAspect, device);
   return (
     <p className={cn("text-[11px] leading-relaxed", fits ? "text-muted-foreground" : "text-amber-600")}>
       {fits
-        ? `Use a ${w} × ${h} capture from the ${DEVICE_LABEL[device].replace(/ \(landscape\)$/, "")} display${device.endsWith("-landscape") ? " in landscape" : ""}.`
-        : `This capture isn't ${w} × ${h} (${DEVICE_LABEL[device]}), so it is letterboxed, not cropped. Capture on that display.`}
+        ? `Use a ${w} × ${h} capture from the ${DEVICES[deviceForOrientation(device, "portrait")].label} display${orientationOf(device, "portrait") === "landscape" ? " in landscape" : ""}.`
+        : `This capture isn't ${w} × ${h} (${DEVICES[device].label}), so it is letterboxed, not cropped. Capture on that display.`}
     </p>
   );
 }
@@ -366,10 +362,7 @@ function ElementTransformControls({
   onUpdate: (update: (slide: Slide) => Partial<Slide>) => void;
   onSelectElement: (id: ElementId | null) => void;
 }) {
-  const present: ElementId[] = ["caption"];
-  if (slide.layout !== "no-device") present.push("device");
-  if (slide.layout === "two-devices") present.push("deviceSecondary");
-  if (slide.callout && calloutAvailable(slide, device)) present.push("callout");
+  const present: ElementId[] = Object.keys(elementRects(slide, device, orientation)) as BuiltInElementId[];
   for (const element of slide.textElements || []) present.push(toTextElementId(element.id));
   for (const element of slide.imageElements || []) present.push(toImageElementId(element.id));
 
@@ -379,7 +372,7 @@ function ElementTransformControls({
   const activeTransform = activeId
     ? getElementTransform(slide, device, orientation, activeId)
     : undefined;
-  const { cW, cH } = getCanvas(device, orientation);
+  const { cW, cH } = canvasSize(device, orientation);
   const activeTextElement =
     activeId && isTextElementId(activeId)
       ? slide.textElements?.find((element) => element.id === textElementKey(activeId))
@@ -487,7 +480,7 @@ function ElementTransformControls({
     const zIndex =
       Math.max(
         5,
-        ...present.map((elementId) => getTransform(elementId)?.zIndex ?? defaultZ(elementId)),
+        ...present.map((elementId) => elementZ(slide, elementId)),
       ) + 1;
     const element: TextElement = {
       id,
@@ -508,9 +501,9 @@ function ElementTransformControls({
   }
 
   function addImageElement() {
-    const { cW, cH } = getCanvas(device, orientation);
+    const { cW, cH } = canvasSize(device, orientation);
     const id = nid();
-    const zIndex = Math.max(5, ...present.map((elementId) => getTransform(elementId)?.zIndex ?? defaultZ(elementId))) + 1;
+    const zIndex = Math.max(5, ...present.map((elementId) => elementZ(slide, elementId))) + 1;
     const element: ImageElement = {
       id,
       src: "",
@@ -528,12 +521,9 @@ function ElementTransformControls({
     onSelectElement(toImageElementId(id));
   }
 
-  // Z-order: re-rank zIndex among present elements so they remain contiguous.
   function reorder(id: ElementId, dir: "front" | "back" | "up" | "down") {
     const ranked = [...present].sort((a, b) => {
-      const za = getTransform(a)?.zIndex ?? defaultZ(a);
-      const zb = getTransform(b)?.zIndex ?? defaultZ(b);
-      return za - zb;
+      return elementZ(slide, a) - elementZ(slide, b);
     });
     const idx = ranked.indexOf(id);
     if (idx === -1) return;
@@ -1189,11 +1179,3 @@ function elementLabel(id: ElementId): string {
   return "Text";
 }
 
-function defaultZ(id: ElementId): number {
-  if (isTextElementId(id)) return 5;
-  if (isImageElementId(id)) return 5;
-  if (id === "deviceSecondary") return 2;
-  if (id === "device") return 3;
-  if (id === "callout") return 5;
-  return 4; // caption on top
-}

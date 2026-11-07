@@ -19,7 +19,7 @@ function parseHex(hex: string): [number, number, number] | null {
   return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
 }
 
-export function relativeLuminance(hex: string): number | null {
+function relativeLuminance(hex: string): number | null {
   const rgb = parseHex(hex);
   if (!rgb) return null;
   const [r, g, b] = rgb.map((v) => {
@@ -29,12 +29,17 @@ export function relativeLuminance(hex: string): number | null {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-export function contrastRatio(a: string, b: string): number {
+function contrastRatio(a: string, b: string): number {
   const la = relativeLuminance(a);
   const lb = relativeLuminance(b);
   if (la === null || lb === null) return 21;
   const [hi, lo] = la > lb ? [la, lb] : [lb, la];
   return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Backgrounds darker than this get light text treatment (subtle shadows, softer blobs). */
+export function isDarkColor(hex: string): boolean {
+  return (relativeLuminance(hex) ?? 1) < 0.18;
 }
 
 function firstReadable(bg: string, candidates: (string | undefined)[], min: number) {
@@ -65,7 +70,7 @@ export function slideColors(theme: Theme, slide: Pick<Slide, "inverted" | "backg
   if (!bg || relativeLuminance(bg) === null) {
     return { fg: themeFg, accent: themeAccent, dark: inverted };
   }
-  const dark = (relativeLuminance(bg) ?? 1) < 0.18;
+  const dark = isDarkColor(bg);
   const fallback = contrastRatio(DARK_TEXT, bg) >= contrastRatio(LIGHT_TEXT, bg) ? DARK_TEXT : LIGHT_TEXT;
   const fg = firstReadable(bg, [themeFg, inverted ? theme.fg : theme.fgAlt], TEXT_CONTRAST) ?? fallback;
   const accent =

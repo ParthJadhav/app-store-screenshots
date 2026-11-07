@@ -6,8 +6,6 @@ import * as React from "react";
 import { img } from "@/lib/image-cache";
 import type { Callout, Scene, Theme } from "@/lib/types";
 
-// ---------- Colour helpers ----------
-
 export function shade(hex: string, percent: number) {
   const c = hex.replace("#", "");
   const num = parseInt(c.length === 3 ? c.split("").map((x) => x + x).join("") : c, 16);
@@ -30,8 +28,6 @@ function hash01(n: number) {
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
   return x - Math.floor(x);
 }
-
-// ---------- Backdrop ----------
 
 type BackdropProps = {
   scene: Scene;
@@ -265,7 +261,6 @@ function SceneDecor({
     );
   }
 
-  // Sparkles: four-point stars scattered with a fixed seed per screen.
   const stars: { x: number; y: number; s: number; o: number }[] = [];
   for (let i = 0; i < screens; i++) {
     for (let j = 0; j < 5; j++) {
@@ -298,8 +293,6 @@ function SceneDecor({
     </svg>
   );
 }
-
-// ---------- Device depth ----------
 
 /**
  * Shadow, glow and 3D tilt around a device frame. The wrapper is always the
@@ -358,8 +351,6 @@ export function DeviceDepth({
     </div>
   );
 }
-
-// ---------- Magnified callout ----------
 
 /**
  * A loupe showing part of the screenshot at `zoom`× the size it appears on the

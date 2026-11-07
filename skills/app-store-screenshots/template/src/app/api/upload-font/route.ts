@@ -1,24 +1,13 @@
-import { createHash } from "node:crypto";
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { NextResponse } from "next/server";
+import { saveAsset } from "@/lib/asset-files";
 import { rejectCrossSiteWrite } from "@/lib/request-guard";
 import type { ImportedFont } from "@/lib/types";
 import { decodeBase64, readJsonBody } from "@/lib/request-body";
-import { writeAsset } from "@/lib/write-asset";
+import { FONT_EXTENSION, UPLOADED_ASSETS, UPLOAD_ERRORS } from "@/lib/uploaded-assets";
 
 export const dynamic = "force-dynamic";
 
-const FONT_DIR_REL = path.join("public", "fonts", "imported");
-const PUBLIC_PREFIX = "/fonts/imported";
-const MAX_FONT_BYTES = 16 * 1024 * 1024;
-
-const FONT_EXT: Record<ImportedFont["format"], string> = {
-  woff2: "woff2",
-  woff: "woff",
-  truetype: "ttf",
-  opentype: "otf",
-};
+const MAX_FONT_BYTES = UPLOADED_ASSETS.font.maxBytes;
 
 // The stored format and extension come from the file's magic bytes, never
 // from the caller-supplied filename or MIME type.
@@ -67,7 +56,7 @@ export async function POST(req: Request) {
   if (blocked) {
     return NextResponse.json({ ok: false, error: blocked.error }, { status: blocked.status });
   }
-  const input = await readJsonBody(req, 23 * 1024 * 1024);
+  const input = await readJsonBody(req, UPLOADED_ASSETS.font.maxRequestBytes);
   if (input.response) return input.response;
   const body = input.value as { data?: unknown } | null;
   if (typeof body?.data !== "string" || !body.data) {
@@ -75,27 +64,20 @@ export async function POST(req: Request) {
   }
   // Reject oversized payloads before decoding (base64 is ~4/3 of the byte size).
   if (body.data.length > Math.ceil(MAX_FONT_BYTES / 3) * 4) {
-    return NextResponse.json({ ok: false, error: "Font file is too large (16MB maximum)." }, { status: 413 });
+    return NextResponse.json({ ok: false, error: UPLOAD_ERRORS.fontTooLarge }, { status: 413 });
   }
   const bytes = decodeBase64(body.data);
   if (!bytes) return NextResponse.json({ ok: false, error: "Invalid base64 font data" }, { status: 400 });
   if (bytes.byteLength > MAX_FONT_BYTES) {
-    return NextResponse.json({ ok: false, error: "Font file is too large (16MB maximum)." }, { status: 413 });
+    return NextResponse.json({ ok: false, error: UPLOAD_ERRORS.fontTooLarge }, { status: 413 });
   }
   const format = sniffFontFormat(bytes);
   if (!format || !hasFontStructure(bytes, format)) {
     return NextResponse.json({ ok: false, error: "Use a WOFF2, WOFF, TTF, or OTF font file." }, { status: 400 });
   }
 
-  const hash = createHash("sha1").update(bytes).digest("hex").slice(0, 16);
-  const filename = `${hash}.${FONT_EXT[format]}`;
-  const absDir = path.join(process.cwd(), FONT_DIR_REL);
-  const absFile = path.join(absDir, filename);
-
   try {
-    await fs.mkdir(absDir, { recursive: true });
-    await writeAsset(absFile, bytes);
-    const font: ImportedFont = { src: `${PUBLIC_PREFIX}/${filename}`, format };
+    const font: ImportedFont = { src: await saveAsset("font", bytes, FONT_EXTENSION[format]), format };
     return NextResponse.json({ ok: true, font });
   } catch (e) {
     return NextResponse.json(

@@ -1,8 +1,8 @@
-import { serveAsset } from "@/lib/serve-asset";
+import { serveAsset } from "@/lib/asset-files";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, context: { params: Promise<{ filename: string }> }) {
   const { filename } = await context.params;
-  return serveAsset("screenshots/uploaded", filename, { png: "image/png", jpg: "image/jpeg" });
+  return serveAsset("image", filename);
 }

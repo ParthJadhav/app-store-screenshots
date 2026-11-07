@@ -2,42 +2,21 @@
 import * as React from "react";
 import JSZip from "jszip";
 import { Toaster, toast } from "sonner";
-import {
-  DEFAULT_SCREENSHOT_FONT_ID,
-  DEVICE_LABEL,
-  deviceForOrientation,
-  getExportSizes,
-  hasTheme,
-  orientationOf,
-  IMPORTED_FONT_FAMILY,
-  SCREENSHOT_FONTS,
-  supportsLandscape,
-  themeById,
-} from "@/lib/constants";
-import { detectPlatform, nid } from "@/lib/defaults";
-import { imageElementKey, isBuiltInElementId, isImageElementId, isTextElementId, textElementKey } from "@/lib/elements";
-import { renderSlide } from "@/lib/export-render";
-import { exportAssetPaths } from "@/lib/export-assets";
-import { DUO_COMPANION, duoGeometry, frameAssetPaths, isDuoDevice, setFrameAssets, type FrameFile, type MeasuredFrame } from "@/lib/frame-assets";
+import { DEFAULT_SCREENSHOT_FONT_ID, IMPORTED_FONT_FAMILY, hasTheme, screenshotFontFamily, themeById } from "@/lib/constants";
+import { copySlide, updateDeck, updateSlide as updateSlideIn, withElementTransform } from "@/lib/deck";
+import { canvasSize, deviceForOrientation, getExportSizes, platformOf, validOrientation } from "@/lib/devices";
+import { renderSlide, waitForPaint } from "@/lib/export-render";
+import { deckAssetPaths, preloadPaths, screenshotIssues } from "@/lib/export-assets";
+import { setFrameAssets, type FrameFile, type MeasuredFrame } from "@/lib/frame-assets";
 import { didFail, preloadImages } from "@/lib/image-cache";
-import { resolveScreenshot, writeLocalized } from "@/lib/locale";
+import { writeLocalized } from "@/lib/locale";
 import { useProject } from "@/lib/storage";
-import type {
-  BuiltInElementId,
-  Device,
-  ElementId,
-  ElementTransform,
-  ImageElement,
-  ImportedFont,
-  SelectedElement,
-  ProjectState,
-  Slide,
-} from "@/lib/types";
+import { downloadBlob, slugify } from "@/lib/utils";
+import type { ElementId, ElementTransform, ImportedFont, SelectedElement, ProjectState, Slide } from "@/lib/types";
 import { Inspector } from "./inspector";
 import { PreviewStage } from "./preview-stage";
 import { Sidebar } from "./sidebar";
-import { DUO_FIT_TOLERANCE, captureFits } from "./device-frames";
-import { DeckCanvas, getCanvas } from "./slide-canvas";
+import { DeckCanvas } from "./slide-canvas";
 import { StyleLab } from "./style-lab";
 import { Toolbar } from "./toolbar";
 
@@ -64,7 +43,7 @@ export function ScreenshotEditor() {
     currentSlides.find((s) => s.id === activeSlideId) || currentSlides[0] || null;
   const theme = themeById(state.themeId);
   const fontId = state.fontId || DEFAULT_SCREENSHOT_FONT_ID;
-  const fontFamily = SCREENSHOT_FONTS[fontId].family;
+  const fontFamily = screenshotFontFamily(fontId);
   useImportedFontFace(state.importedFont);
 
   React.useEffect(() => {
@@ -84,7 +63,7 @@ export function ScreenshotEditor() {
 
   React.useEffect(() => {
     // Undo can restore a device whose orientation differs from the current one.
-    const expected = supportsLandscape(state.device) ? orientationOf(state.device, state.orientation) : "portrait";
+    const expected = validOrientation(state.device, state.orientation);
     if (state.orientation !== expected) {
       setState((p) => ({ ...p, orientation: expected }), { history: false });
     }
@@ -99,33 +78,8 @@ export function ScreenshotEditor() {
     }
   }, [hydrated, state.themeId]);
 
-  const assetPaths = React.useMemo(() => {
-    const paths = new Set<string>();
-    paths.add("/mockup.png");
-    // Only the open deck's bezel: each is a large PNG, and export preloads its
-    // own device's bezel before capturing.
-    for (const path of frameAssetPaths(state.device)) paths.add(path);
-    if (state.appIcon) paths.add(state.appIcon);
-    // Preload every locale variant so bulk export doesn't race image loads.
-    const allSlides: Slide[] = Object.values(state.slidesByDevice).flat();
-    for (const s of allSlides) {
-      for (const raw of [s.screenshot, s.screenshotSecondary]) {
-        if (!raw) continue;
-        // Inline (data URI) captures are decoded too, so their size is known
-        // after a reload and a mismatched Duo capture is still flagged.
-        if (raw.startsWith("data:")) { paths.add(raw); continue; }
-        if (raw.includes("{locale}")) {
-          for (const loc of state.locales) paths.add(resolveScreenshot(raw, loc));
-        } else {
-          paths.add(raw);
-        }
-      }
-      for (const imageElement of s.imageElements || []) {
-        if (imageElement.src && !imageElement.src.startsWith("data:")) paths.add(imageElement.src);
-      }
-    }
-    return Array.from(paths).sort();
-  }, [state.slidesByDevice, state.appIcon, state.locales, state.device, framesLoaded]);
+  // Recomputed every render: the open deck's bezels are known once frames load.
+  const assetPaths = preloadPaths(state);
   // Inline captures can be megabytes long; a length and tail stand in for them.
   const assetSig = assetPaths.map((p) => (p.startsWith("data:") ? `data:${p.length}:${p.slice(-48)}` : p)).join("|");
 
@@ -143,7 +97,6 @@ export function ScreenshotEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, framesLoaded, assetSig]);
 
-  // Surface storage failures (quota exceeded etc.) so the user knows their work isn't safe.
   React.useEffect(() => {
     if (saveError) {
       toast.error("Couldn't load or save project file", {
@@ -153,45 +106,13 @@ export function ScreenshotEditor() {
     }
   }, [saveError]);
 
-  // ---------- Mutations ----------
-
-  const patchSlide = React.useCallback(
-    (id: string, patch: Partial<Slide>) => {
-      setState((prev) => ({
-        ...prev,
-        slidesByDevice: {
-          ...prev.slidesByDevice,
-          [state.device]: (prev.slidesByDevice[state.device] || []).map((s) =>
-            s.id === id ? { ...s, ...patch } : s,
-          ),
-        },
-      }));
-    },
-    [setState, state.device],
-  );
-
   const updateSlide = React.useCallback(
-    (id: string, update: (slide: Slide) => Partial<Slide>) => {
-      setState((prev) => ({
-        ...prev,
-        slidesByDevice: {
-          ...prev.slidesByDevice,
-          [state.device]: (prev.slidesByDevice[state.device] || []).map((s) =>
-            s.id === id ? { ...s, ...update(s) } : s,
-          ),
-        },
-      }));
-    },
-    [setState, state.device],
+    (id: string, update: (slide: Slide) => Partial<Slide>) => setState((prev) => updateSlideIn(prev, id, update)),
+    [setState],
   );
 
   const reorderSlides = React.useCallback(
-    (next: Slide[]) => {
-      setState((prev) => ({
-        ...prev,
-        slidesByDevice: { ...prev.slidesByDevice, [prev.device]: next },
-      }), { coalesce: false });
-    },
+    (next: Slide[]) => setState((prev) => updateDeck(prev, prev.device, () => next), { coalesce: false }),
     [setState],
   );
 
@@ -204,28 +125,16 @@ export function ScreenshotEditor() {
       const snap = slides[idx];
       const fallback = slides[idx + 1] || slides[idx - 1] || null;
 
-      setState((prev) => {
-        const cur = prev.slidesByDevice[dev] || [];
-        return {
-          ...prev,
-          slidesByDevice: { ...prev.slidesByDevice, [dev]: cur.filter((s) => s.id !== id) },
-        };
-      }, { coalesce: false });
+      setState((prev) => updateDeck(prev, dev, (cur) => cur.filter((s) => s.id !== id)), { coalesce: false });
       setActiveSlideId((cur) => (cur === id ? fallback?.id || null : cur));
 
       toast("Screen deleted", {
         action: {
           label: "Undo",
           onClick: () => {
-            setState((prev) => {
-              const cur = prev.slidesByDevice[dev] || [];
-              if (cur.some((s) => s.id === snap.id)) return prev;
-              const restored = [...cur.slice(0, idx), snap, ...cur.slice(idx)];
-              return {
-                ...prev,
-                slidesByDevice: { ...prev.slidesByDevice, [dev]: restored },
-              };
-            }, { coalesce: false });
+            setState((prev) => updateDeck(prev, dev, (cur) =>
+              cur.some((s) => s.id === snap.id) ? cur : [...cur.slice(0, idx), snap, ...cur.slice(idx)],
+            ), { coalesce: false });
             setActiveSlideId(snap.id);
           },
         },
@@ -237,135 +146,48 @@ export function ScreenshotEditor() {
 
   const addSlide = React.useCallback(
     (slide: Slide) => {
-      setState((prev) => ({
-        ...prev,
-        slidesByDevice: {
-          ...prev.slidesByDevice,
-          [prev.device]: [...(prev.slidesByDevice[prev.device] || []), slide],
-        },
-      }), { coalesce: false });
+      setState((prev) => updateDeck(prev, prev.device, (slides) => [...slides, slide]), { coalesce: false });
       setActiveSlideId(slide.id);
     },
     [setState],
   );
 
   const patchLocalized = React.useCallback(
-    (slide: Slide, key: "label" | "headline", value: string) => {
-      patchSlide(slide.id, {
-        [key]: writeLocalized(slide[key], state.locale, value),
-      } as Partial<Slide>);
-    },
-    [patchSlide, state.locale],
+    (slideId: string, key: "label" | "headline", value: string) =>
+      setState((prev) => updateSlideIn(prev, slideId, (slide) => ({ [key]: writeLocalized(slide[key], prev.locale, value) }))),
+    [setState],
   );
 
   const patchElementTransform = React.useCallback(
-    (slideId: string, elementId: ElementId, transform: ElementTransform) => {
-      setState((prev) => ({
-        ...prev,
-        slidesByDevice: {
-          ...prev.slidesByDevice,
-          [prev.device]: (prev.slidesByDevice[prev.device] || []).map((slide) => {
-            if (slide.id !== slideId) return slide;
-            if (isTextElementId(elementId)) {
-              const textId = textElementKey(elementId);
-              return {
-                ...slide,
-                textElements: (slide.textElements || []).map((element) =>
-                  element.id === textId ? { ...element, transform } : element,
-                ),
-              };
-            }
-            if (isImageElementId(elementId)) {
-              const imageId = imageElementKey(elementId);
-              return {
-                ...slide,
-                imageElements: (slide.imageElements || []).map((element) =>
-                  element.id === imageId ? { ...element, transform } : element,
-                ),
-              };
-            }
-            if (!isBuiltInElementId(elementId)) return slide;
-            return {
-              ...slide,
-              transforms: {
-                ...(slide.transforms || {}),
-                [elementId]: transform,
-              } as Partial<Record<BuiltInElementId, ElementTransform>>,
-            };
-          }),
-        },
-      }));
-    },
+    (slideId: string, elementId: ElementId, transform: ElementTransform) =>
+      setState((prev) => updateSlideIn(prev, slideId, (slide) => withElementTransform(slide, elementId, transform))),
     [setState],
   );
 
   const patchTextElementText = React.useCallback(
-    (slideId: string, textId: string, value: string) => {
-      setState((prev) => ({
-        ...prev,
-        slidesByDevice: {
-          ...prev.slidesByDevice,
-          [prev.device]: (prev.slidesByDevice[prev.device] || []).map((slide) =>
-            slide.id === slideId
-              ? {
-                  ...slide,
-                  textElements: (slide.textElements || []).map((element) =>
-                    element.id === textId
-                      ? { ...element, text: writeLocalized(element.text, prev.locale, value) }
-                      : element,
-                  ),
-                }
-              : slide,
-          ),
-        },
-      }));
-    },
+    (slideId: string, textId: string, value: string) =>
+      setState((prev) => updateSlideIn(prev, slideId, (slide) => ({
+        textElements: (slide.textElements || []).map((element) =>
+          element.id === textId ? { ...element, text: writeLocalized(element.text, prev.locale, value) } : element,
+        ),
+      }))),
     [setState],
   );
 
   const duplicateSlide = React.useCallback(
     (id: string) => {
       let newId: string | null = null;
-      setState((prev) => {
-        const slides = prev.slidesByDevice[prev.device] || [];
+      setState((prev) => updateDeck(prev, prev.device, (slides) => {
         const idx = slides.findIndex((s) => s.id === id);
-        if (idx === -1) return prev;
-        const src = slides[idx];
-        newId = nid();
-        const copy: Slide = {
-          ...src,
-          id: newId,
-          label: { ...src.label },
-          headline: { ...src.headline },
-          transforms: src.transforms
-            ? Object.fromEntries(
-                Object.entries(src.transforms).map(([key, value]) => [key, { ...value }]),
-              )
-            : undefined,
-          textElements: src.textElements?.map((element) => ({
-            ...element,
-            id: nid(),
-            text: { ...element.text },
-            transform: { ...element.transform },
-          })),
-          imageElements: src.imageElements?.map((element): ImageElement => ({
-            ...element,
-            id: nid(),
-            transform: { ...element.transform },
-          })),
-        };
-        const next = [...slides.slice(0, idx + 1), copy, ...slides.slice(idx + 1)];
-        return {
-          ...prev,
-          slidesByDevice: { ...prev.slidesByDevice, [prev.device]: next },
-        };
-      }, { coalesce: false });
+        if (idx === -1) return slides;
+        const copy = copySlide(slides[idx]);
+        newId = copy.id;
+        return [...slides.slice(0, idx + 1), copy, ...slides.slice(idx + 1)];
+      }), { coalesce: false });
       if (newId) setActiveSlideId(newId);
     },
     [setState],
   );
-
-  // ---------- Keyboard shortcuts ----------
 
   React.useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -383,7 +205,6 @@ export function ScreenshotEditor() {
         return;
       }
 
-      // Undo/redo belongs to the text field while one is focused.
       const mod = e.metaKey || e.ctrlKey;
       if (mod && !e.altKey && (e.key === "z" || e.key === "Z" || e.key === "y" || e.key === "Y")) {
         if (inTextField) return;
@@ -393,7 +214,6 @@ export function ScreenshotEditor() {
         return;
       }
 
-      // Arrow keys, deletion etc. keep their native meaning inside any input.
       if (inControl) return;
 
       if (!currentSlides.length) return;
@@ -421,16 +241,6 @@ export function ScreenshotEditor() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [activeSlide, currentSlides, duplicateSlide, deleteSlide, exporting, undo, redo]);
-
-  // ---------- Export ----------
-
-  // Wait two animation frames so React's render → browser layout/paint of the
-  // off-screen container settles before html-to-image snapshots it. One frame
-  // is occasionally not enough on slower machines.
-  const waitForPaint = () =>
-    new Promise<void>((resolve) => {
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-    });
 
   async function exportAll() {
     if (exportInProgress.current) return;
@@ -463,7 +273,7 @@ export function ScreenshotEditor() {
       return;
     }
     const locales = state.locales;
-    const exportPaths = exportAssetPaths(state);
+    const exportPaths = deckAssetPaths(state, state.device);
     await preloadImages(exportPaths, { retryFailed: true });
     const missingPaths = exportPaths.filter(didFail);
     if (missingPaths.length) {
@@ -471,50 +281,20 @@ export function ScreenshotEditor() {
     }
     await waitForPaint();
 
-    const device = state.device;
-    // On iPhone Duo the back device is the other display: it never reuses the
-    // front capture, so a missing one leaves that device empty.
-    const duoPair = (slide: Slide) => isDuoDevice(device) && slide.layout === "two-devices";
-    const missingScreens = currentSlides
-      .map((slide, index) => ({ slide, index }))
-      .filter(({ slide }) =>
-        slideNeedsScreenshot(device, slide) && (!slide.screenshot || (duoPair(slide) && !slide.screenshotSecondary)),
-      );
-    const reusedBackScreens = currentSlides
-      .map((slide, index) => ({ slide, index }))
-      .filter(
-        ({ slide }) =>
-          device !== "feature-graphic" &&
-          slide.layout === "two-devices" &&
-          !duoPair(slide) &&
-          slide.screenshot &&
-          !slide.screenshotSecondary,
-      );
-    // A capture from another display is letterboxed inside a Duo frame, never
-    // cropped or stretched, so name it rather than let it pass unnoticed.
-    const fitsDisplay = (raw: string | undefined, display: Device) =>
-      !raw || !isDuoDevice(display) ||
-      locales.every((loc) => captureFits(resolveScreenshot(raw, loc), duoGeometry(display).screenAspect, DUO_FIT_TOLERANCE));
-    const mismatched = isDuoDevice(device)
-      ? currentSlides.filter((slide) =>
-          slideNeedsScreenshot(device, slide) &&
-          (!fitsDisplay(slide.screenshot, device) ||
-            (slide.layout === "two-devices" && !fitsDisplay(slide.screenshotSecondary, DUO_COMPANION[device]))),
-        ).length
-      : 0;
-    if (missingScreens.length > 0 || reusedBackScreens.length > 0 || mismatched > 0) {
+    const { missing, reusedBack, mismatched } = screenshotIssues(state);
+    if (missing > 0 || reusedBack > 0 || mismatched > 0) {
       const details = [
-        missingScreens.length
-          ? `${missingScreens.length} screen${missingScreens.length === 1 ? "" : "s"} will export with an empty device.`
+        missing
+          ? `${missing} screen${missing === 1 ? "" : "s"} will export with an empty device.`
           : null,
-        reusedBackScreens.length
-          ? `${reusedBackScreens.length} two-device screen${reusedBackScreens.length === 1 ? "" : "s"} will reuse the primary screenshot in back.`
+        reusedBack
+          ? `${reusedBack} two-device screen${reusedBack === 1 ? "" : "s"} will reuse the primary screenshot in back.`
           : null,
         mismatched
           ? `${mismatched} screen${mismatched === 1 ? "" : "s"} use${mismatched === 1 ? "s" : ""} a capture that doesn't match its iPhone Duo display, so it is letterboxed. Capture on that display.`
           : null,
       ].filter(Boolean);
-      toast.warning(missingScreens.length || reusedBackScreens.length ? "Export includes placeholder screenshots" : "Check these screenshots", {
+      toast.warning(missing || reusedBack ? "Export includes placeholder screenshots" : "Check these screenshots", {
         description: details.join(" "),
         duration: 7000,
       });
@@ -543,8 +323,8 @@ export function ScreenshotEditor() {
       }
     }
 
-    const { cW, cH } = getCanvas(state.device, state.orientation);
-    const platform = detectPlatform(state.device);
+    const { cW, cH } = canvasSize(state.device, state.orientation);
+    const platform = platformOf(state.device);
     const zip = new JSZip();
     const totalUnits = sizes.length * locales.length * currentSlides.length;
     const totalRenders = locales.length * currentSlides.length;
@@ -620,12 +400,7 @@ export function ScreenshotEditor() {
     if (okCount > 0) {
       try {
         const blob = await zip.generateAsync({ type: "blob" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${slugify(state.appName)}-${platform}-${state.device}-${stamp()}.zip`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        downloadBlob(blob, `${slugify(state.appName)}-${platform}-${state.device}-${stamp()}.zip`);
       } catch (e) {
         toast.error("Couldn't bundle export");
         console.error(e);
@@ -684,8 +459,6 @@ export function ScreenshotEditor() {
     }
   }
 
-  // ---------- Render ----------
-
   if (!hydrated || !ready || !framesLoaded) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -700,7 +473,7 @@ export function ScreenshotEditor() {
   const busy = !!exporting;
   const exportState = exportProject ?? state;
   const exportSlides = exportState.slidesByDevice[exportState.device] || [];
-  const exportCanvas = getCanvas(exportState.device, exportState.orientation);
+  const exportCanvas = canvasSize(exportState.device, exportState.orientation);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background">
@@ -723,7 +496,7 @@ export function ScreenshotEditor() {
         setLocale={(v) => setState((p) => ({ ...p, locale: v }), { history: false })}
         locales={state.locales}
         device={state.device}
-        setDevice={(v) => setState((p) => ({ ...p, device: v, orientation: orientationOf(v, p.orientation) }), { history: false })}
+        setDevice={(v) => setState((p) => ({ ...p, device: v, orientation: validOrientation(v, p.orientation) }), { history: false })}
         orientation={state.orientation}
         // A Duo orientation is its own deck: switching opens it rather than
         // re-laying out the current one, so both compositions survive.
@@ -789,8 +562,8 @@ export function ScreenshotEditor() {
               scene={state.scene}
               selectedElement={selectedElement}
               onActiveSlideChange={setActiveSlideId}
-              onLabelChange={(slide, v) => patchLocalized(slide, "label", v)}
-              onHeadlineChange={(slide, v) => patchLocalized(slide, "headline", v)}
+              onLabelChange={(slideId, v) => patchLocalized(slideId, "label", v)}
+              onHeadlineChange={(slideId, v) => patchLocalized(slideId, "headline", v)}
               onTextElementTextChange={patchTextElementText}
               onElementChange={patchElementTransform}
               onSelectElement={setSelectedElement}
@@ -817,7 +590,7 @@ export function ScreenshotEditor() {
               selectedElementId={
                 selectedElement?.slideId === activeSlide.id ? selectedElement.elementId : null
               }
-              onChange={(patch) => patchSlide(activeSlide.id, patch)}
+              onChange={(patch) => updateSlide(activeSlide.id, () => patch)}
               onUpdate={(update) => updateSlide(activeSlide.id, update)}
               onSelectElement={(elementId) =>
                 setSelectedElement(
@@ -859,7 +632,6 @@ export function ScreenshotEditor() {
         }
       />
 
-      {/* Off-screen export container — full-resolution canvases for html-to-image. */}
       <div
         aria-hidden
         style={{
@@ -898,7 +670,7 @@ export function ScreenshotEditor() {
                 locale={exportLocaleOverride ?? exportState.locale}
                 appName={exportState.appName}
                 appIcon={exportState.appIcon}
-                fontFamily={SCREENSHOT_FONTS[exportState.fontId || DEFAULT_SCREENSHOT_FONT_ID].family}
+                fontFamily={screenshotFontFamily(exportState.fontId)}
                 connectedCanvas={exportState.connectedCanvas}
                 scene={exportState.scene}
                 hideEmpty
@@ -960,28 +732,15 @@ function useFrameAssets() {
             duration: 12000,
           });
         }
-      } catch {
+      } catch (error) {
         // No frames route (e.g. a static build): the drawn frames still work.
+        console.warn("Device bezels unavailable; using drawn frames.", error);
       }
       if (!cancelled) setLoaded(true);
     })();
     return () => { cancelled = true; };
   }, []);
   return loaded;
-}
-
-function slugify(s: string) {
-  return (
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") || "screenshots"
-  );
-}
-
-function slideNeedsScreenshot(device: Device, slide: Slide) {
-  if (device === "feature-graphic") return false;
-  return slide.layout !== "no-device" && slide.layout !== "feature-graphic";
 }
 
 function stamp() {

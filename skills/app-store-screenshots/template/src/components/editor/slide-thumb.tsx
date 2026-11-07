@@ -4,11 +4,12 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Copy, GripVertical, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { layoutLabel } from "@/lib/constants";
+import { canvasSize } from "@/lib/devices";
+import { layoutLabel } from "@/lib/layouts";
 import { pickText } from "@/lib/locale";
 import type { Device, Orientation, Scene, Slide, Theme } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { DeckCanvas, SlideCanvas, getCanvas } from "./slide-canvas";
+import { DeckCanvas, SlideCanvas } from "./slide-canvas";
 
 type Props = {
   slide: Slide;
@@ -29,7 +30,6 @@ type Props = {
   onDuplicate: () => void;
 };
 
-// Thumb tile target width (pixels). Height is derived from device aspect.
 const THUMB_W = 60;
 
 export function SlideThumb({
@@ -56,7 +56,7 @@ export function SlideThumb({
     id: slide.id,
   });
 
-  const { cW, cH } = getCanvas(device, orientation);
+  const { cW, cH } = canvasSize(device, orientation);
   const aspect = cW / cH;
   const tileH = Math.max(34, Math.min(120, Math.round(THUMB_W / aspect)));
   const scale = THUMB_W / cW;

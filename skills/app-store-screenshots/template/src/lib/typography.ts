@@ -5,7 +5,7 @@ export const FONT_SCALE_MIN = 0.5;
 export const FONT_SCALE_MAX = 2;
 export const FONT_SCALE_DEFAULT = 1;
 
-export function clampFontScale(value: number | undefined): number {
+function clampFontScale(value: number | undefined): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return FONT_SCALE_DEFAULT;
   return Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, value));
 }

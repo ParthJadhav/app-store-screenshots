@@ -2,7 +2,9 @@
 // and scene), keeps locked parts from the current deck, and applies a look as
 // one undoable edit. Generation is seeded, so the same seed always produces
 // the same four looks.
-import { SCREENSHOT_FONTS, THEMES, supportsLandscape } from "./constants";
+import { SCREENSHOT_FONTS, THEMES, fontAvailable } from "./constants";
+import { DEVICES } from "./devices";
+import { layoutHasDevice, restylable } from "./layouts";
 import { DEFAULT_SCENE, sameScene, sceneOf } from "./scene";
 import type { Device, Look, ProjectState, Scene, ScreenshotFontId, Slide, SlideLayout } from "./types";
 
@@ -210,7 +212,7 @@ export const DIRECTIONS: Direction[] = [
 ];
 
 /** The four directions a fresh Style Lab opens with: clearly different from each other. */
-export const STARTER_DIRECTIONS = ["editorial", "playful", "cinematic", "minimal"];
+const STARTER_DIRECTIONS = ["editorial", "playful", "cinematic", "minimal"];
 
 export function directionName(id: string) {
   return DIRECTIONS.find((d) => d.id === id)?.name ?? "Custom";
@@ -234,9 +236,10 @@ export function generateLook(directionId: string, seed: number): Look {
   };
 }
 
-/** `count` different directions for one shuffle, starting with the starter set. */
-export function pickDirections(seed: number, count = 4): string[] {
-  if (seed === 0) return STARTER_DIRECTIONS.slice(0, count);
+/** Four different directions for one shuffle, starting with the starter set. */
+export function pickDirections(seed: number): string[] {
+  const count = STARTER_DIRECTIONS.length;
+  if (seed === 0) return [...STARTER_DIRECTIONS];
   const r = rng(seed * 31 + 7);
   const pool = DIRECTIONS.map((d) => d.id);
   for (let i = pool.length - 1; i > 0; i--) {
@@ -285,11 +288,7 @@ export function withLocks(look: Look, base: Look, locks: Locks): Look {
 // Phones and portrait tablets have the full set of portrait layouts. Landscape
 // canvases, watches and the Play banner keep their own layouts.
 export function canRearrange(device: Device, orientation: ProjectState["orientation"]) {
-  if (device === "iphone" || device === "android" || device === "ipad") return true;
-  // Both Duo displays in portrait take every portrait layout.
-  if (device === "duo-outer" || device === "duo-inner") return true;
-  if (device === "android-7" || device === "android-10") return orientation === "portrait" || !supportsLandscape(device);
-  return false;
+  return DEVICES[device].rearrangeable && orientation === "portrait";
 }
 
 function restyleSlide(slide: Slide, index: number, look: Look, locks: Locks, rearrange: boolean): Slide {
@@ -298,11 +297,11 @@ function restyleSlide(slide: Slide, index: number, look: Look, locks: Locks, rea
     next.inverted = look.inverted[index % look.inverted.length] || undefined;
     next.backgroundColor = undefined;
   }
-  if (!locks.layout && rearrange && slide.layout !== "no-device" && slide.layout !== "feature-graphic") {
+  if (!locks.layout && rearrange && layoutHasDevice(slide.layout)) {
     let layout = look.layouts[index % look.layouts.length];
     // A back device without its own screenshot would just repeat the front one.
     if (layout === "two-devices" && !slide.screenshotSecondary) layout = "hero";
-    if (layout === "no-device" || layout === "feature-graphic" || layout === "split-landscape") layout = slide.layout;
+    if (!restylable(layout)) layout = slide.layout;
     // Fresh layout = fresh default placement, so the look reads as designed.
     const { caption: _c, device: _d, deviceSecondary: _s, callout: _m, ...kept } = slide.transforms || {};
     next = { ...next, layout, transforms: Object.keys(kept).length ? kept : undefined };
@@ -311,13 +310,13 @@ function restyleSlide(slide: Slide, index: number, look: Look, locks: Locks, rea
 }
 
 /** The project with `look` applied to the open deck. Locked parts stay as they are. */
-export function applyLook(state: ProjectState, look: Look, locks: Locks = NO_LOCKS): ProjectState {
+export function applyLook(state: ProjectState, look: Look, locks: Locks): ProjectState {
   const slides = state.slidesByDevice[state.device] || [];
   const rearrange = canRearrange(state.device, state.orientation);
   const base = currentLook(state);
   const merged = withLocks(look, base, locks);
   // An imported font only exists on the machine that imported it.
-  const fontId = merged.fontId === "self-hosted" && !state.importedFont ? state.fontId : merged.fontId;
+  const fontId = fontAvailable(merged.fontId, state.importedFont) ? merged.fontId : state.fontId;
   const scene = merged.scene;
   return {
     ...state,

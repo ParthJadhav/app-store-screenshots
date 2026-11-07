@@ -18,7 +18,7 @@ import {
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Device, Orientation, Scene, Slide, Theme } from "@/lib/types";
-import { isCreative } from "@/lib/constants";
+import { DEVICES } from "@/lib/devices";
 import { newSlide } from "@/lib/defaults";
 import { SlideThumb } from "./slide-thumb";
 
@@ -129,13 +129,7 @@ export function Sidebar({
           variant="default"
           onClick={() =>
             onAdd(
-              newSlide(
-                device === "feature-graphic"
-                  ? "feature-graphic"
-                  : device === "mac" || device.endsWith("-landscape") || isCreative(device)
-                    ? "split-landscape"
-                    : "device-bottom",
-              ),
+              newSlide(DEVICES[device].newSlideLayout),
             )
           }
           disabled={disabled}

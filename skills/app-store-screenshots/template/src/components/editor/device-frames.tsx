@@ -1,27 +1,27 @@
 "use client";
 import * as React from "react";
-import { MAC_RATIO, MAC_TITLE_BAR, PHONE_SCREEN } from "@/lib/constants";
-import { bezelGeometry, isDuoDevice, type DuoDevice } from "@/lib/frame-assets";
-import type { Device } from "@/lib/types";
+import { type DuoDevice } from "@/lib/devices";
+import { FRAME_ASPECT, MAC_TITLE_BAR, MOCKUP_SRC, PHONE_SCREEN, bezelGeometry, captureFits, fillsFromTop } from "@/lib/frame-assets";
+import type { Device, Orientation } from "@/lib/types";
 import { img, imgSize } from "@/lib/image-cache";
 
 type FrameProps = {
   src: string;
-  alt?: string;
   style?: React.CSSProperties;
   /** When true, hide EmptySlot placeholder (so it doesn't bake into exports). */
   hideEmpty?: boolean;
 };
 
-// iPhone — uses pre-measured mockup.png overlay
-export function Phone({ src, alt = "", style, hideEmpty }: FrameProps) {
+type FrameComponent = React.ComponentType<FrameProps>;
+
+function Phone({ src, style, hideEmpty }: FrameProps) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: "1022 / 2082", ...style }}>
+    <div style={{ position: "relative", aspectRatio: FRAME_ASPECT.iphone, ...style }}>
       {/* The screen layer covers the bezel's centre, so the exporter checks the
           whole mockup (its visible bezel) rather than its hidden middle. */}
       <img
-        src={img("/mockup.png")}
+        src={img(MOCKUP_SRC)}
         alt=""
         data-export-check="full"
         style={{ display: "block", width: "100%", height: "100%" }}
@@ -43,7 +43,7 @@ export function Phone({ src, alt = "", style, hideEmpty }: FrameProps) {
         {resolved ? (
           <img
             src={resolved}
-            alt={alt}
+            alt=""
             style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
             draggable={false}
           />
@@ -55,10 +55,10 @@ export function Phone({ src, alt = "", style, hideEmpty }: FrameProps) {
   );
 }
 
-export function AndroidPhone({ src, alt = "", style, hideEmpty }: FrameProps) {
+function AndroidPhone({ src, style, hideEmpty }: FrameProps) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: "9 / 19.5", ...style }}>
+    <div style={{ position: "relative", aspectRatio: FRAME_ASPECT.android, ...style }}>
       <div
         style={{
           width: "100%",
@@ -99,7 +99,7 @@ export function AndroidPhone({ src, alt = "", style, hideEmpty }: FrameProps) {
           {resolved ? (
             <img
               src={resolved}
-              alt={alt}
+              alt=""
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
               draggable={false}
             />
@@ -112,10 +112,10 @@ export function AndroidPhone({ src, alt = "", style, hideEmpty }: FrameProps) {
   );
 }
 
-export function AndroidTabletP({ src, alt = "", style, hideEmpty }: FrameProps) {
+function AndroidTabletP({ src, style, hideEmpty }: FrameProps) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: "5 / 8", ...style }}>
+    <div style={{ position: "relative", aspectRatio: FRAME_ASPECT.tabletPortrait, ...style }}>
       <div
         style={{
           width: "100%",
@@ -155,7 +155,7 @@ export function AndroidTabletP({ src, alt = "", style, hideEmpty }: FrameProps) 
           {resolved ? (
             <img
               src={resolved}
-              alt={alt}
+              alt=""
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
               draggable={false}
             />
@@ -168,10 +168,10 @@ export function AndroidTabletP({ src, alt = "", style, hideEmpty }: FrameProps) 
   );
 }
 
-export function AndroidTabletL({ src, alt = "", style, hideEmpty }: FrameProps) {
+function AndroidTabletL({ src, style, hideEmpty }: FrameProps) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: "8 / 5", ...style }}>
+    <div style={{ position: "relative", aspectRatio: FRAME_ASPECT.tabletLandscape, ...style }}>
       <div
         style={{
           width: "100%",
@@ -211,7 +211,7 @@ export function AndroidTabletL({ src, alt = "", style, hideEmpty }: FrameProps) 
           {resolved ? (
             <img
               src={resolved}
-              alt={alt}
+              alt=""
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
               draggable={false}
             />
@@ -226,7 +226,7 @@ export function AndroidTabletL({ src, alt = "", style, hideEmpty }: FrameProps) 
 
 // Mac window: title bar + a content area that is exactly 16:10, the Mac App
 // Store's own aspect, so a full-screen or 16:10 capture fills it uncropped.
-export function MacWindow({ src, alt = "", style, hideEmpty }: FrameProps) {
+function MacWindow({ src, style, hideEmpty }: FrameProps) {
   const resolved = img(src);
   const titleBar = `${(MAC_TITLE_BAR / (1 + MAC_TITLE_BAR)) * 100}%`;
   const light = (color: string) => (
@@ -242,13 +242,13 @@ export function MacWindow({ src, alt = "", style, hideEmpty }: FrameProps) {
     />
   );
   return (
-    <div style={{ position: "relative", aspectRatio: `${MAC_RATIO}`, ...style }}>
+    <div style={{ position: "relative", aspectRatio: FRAME_ASPECT.mac, ...style }}>
       <div
         style={{
           width: "100%",
           height: "100%",
           // Circular corners: the vertical radius is scaled by the frame aspect.
-          borderRadius: `1.1% / ${1.1 * MAC_RATIO}%`,
+          borderRadius: `1.1% / ${1.1 * FRAME_ASPECT.mac}%`,
           background: "#1C1C1E",
           boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12), 0 18px 60px rgba(0,0,0,0.40)",
           overflow: "hidden",
@@ -277,7 +277,7 @@ export function MacWindow({ src, alt = "", style, hideEmpty }: FrameProps) {
           {resolved ? (
             <img
               src={resolved}
-              alt={alt}
+              alt=""
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
               draggable={false}
             />
@@ -290,10 +290,10 @@ export function MacWindow({ src, alt = "", style, hideEmpty }: FrameProps) {
   );
 }
 
-export function IPad({ src, alt = "", style, hideEmpty }: FrameProps) {
+function IPad({ src, style, hideEmpty }: FrameProps) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: "770 / 1000", ...style }}>
+    <div style={{ position: "relative", aspectRatio: FRAME_ASPECT.ipad, ...style }}>
       <div
         style={{
           width: "100%",
@@ -333,7 +333,7 @@ export function IPad({ src, alt = "", style, hideEmpty }: FrameProps) {
           {resolved ? (
             <img
               src={resolved}
-              alt={alt}
+              alt=""
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
               draggable={false}
             />
@@ -346,32 +346,15 @@ export function IPad({ src, alt = "", style, hideEmpty }: FrameProps) {
   );
 }
 
-// ---------- iPhone Duo ----------
 // Geometry comes from Apple's bezel in public/frames/ (measured by
 // /api/frames) or, without one, a drawn frame whose screen has the capture's
 // exact aspect. The frame fits itself inside whatever box it is given, so a
 // placement saved with a different bezel never stretches it.
 
-// A capture whose aspect is off by more than this is letterboxed rather than
-// cropped: cropping would cut real UI, which is worse than a visible bar.
-// Loose enough for every size a device accepts: Apple Watch slots differ from
-// the Ultra's 422 × 514 screen by up to 2.6 %.
-const FIT_TOLERANCE = 0.03;
-// The two iPhone Duo displays differ by only 2.35 % (1398 × 2034 against
-// 2007 × 2853), so Duo captures must match far more closely to tell an outer
-// capture from an inner one. Scaled-down captures of the right display pass.
-export const DUO_FIT_TOLERANCE = 0.005;
-
-export function captureFits(src: string, screenAspect: number, tolerance = FIT_TOLERANCE) {
-  const size = imgSize(src);
-  return !size || Math.abs(size.w / size.h / screenAspect - 1) <= tolerance;
-}
-
 // A device drawn under Apple's bezel (or, for iPhone Duo without one, a drawn
-// stand-in). Mac captures are 16:10 but MacBook screens are a little taller, so
-// a Mac capture fills the screen from the top and loses a sliver at the bottom,
-// like the built-in Mac window; everything else is letterboxed if it doesn't fit.
-function BezelFrame({ device, src, alt = "", style, hideEmpty }: FrameProps & { device: Device }) {
+// stand-in). A capture that doesn't fit the screen is letterboxed, unless the
+// device fills from the top (see fillsFromTop).
+function BezelFrame({ device, src, style, hideEmpty }: FrameProps & { device: Device }) {
   const g = bezelGeometry(device);
   if (!g) return null;
   const resolved = img(src);
@@ -416,13 +399,13 @@ function BezelFrame({ device, src, alt = "", style, hideEmpty }: FrameProps & { 
           {resolved ? (
             <img
               src={resolved}
-              alt={alt}
+              alt=""
               style={{
                 display: "block",
                 width: "100%",
                 height: "100%",
-                objectFit: device === "mac" || captureFits(src, g.screenAspect, isDuoDevice(device) ? DUO_FIT_TOLERANCE : undefined) ? "cover" : "contain",
-                objectPosition: device === "mac" ? "top" : "center",
+                objectFit: fillsFromTop(device) || captureFits(imgSize(src), g.screenAspect, device) ? "cover" : "contain",
+                objectPosition: fillsFromTop(device) ? "top" : "center",
               }}
               draggable={false}
             />
@@ -475,17 +458,16 @@ function BezelFrame({ device, src, alt = "", style, hideEmpty }: FrameProps & { 
 }
 
 // One stable component per target, so switching decks doesn't remount frames.
-export const DUO_FRAMES: Record<DuoDevice, React.ComponentType<FrameProps>> = {
+const DUO_FRAMES: Record<DuoDevice, FrameComponent> = {
   "duo-outer": (props) => <BezelFrame device="duo-outer" {...props} />,
   "duo-outer-landscape": (props) => <BezelFrame device="duo-outer-landscape" {...props} />,
   "duo-inner": (props) => <BezelFrame device="duo-inner" {...props} />,
   "duo-inner-landscape": (props) => <BezelFrame device="duo-inner-landscape" {...props} />,
 };
 
-const bezelFrames = new Map<Device, React.ComponentType<FrameProps>>();
+const bezelFrames = new Map<Device, FrameComponent>();
 
-/** The stable bezel frame component for a device (used once its bezel is measured). */
-export function bezelFrameFor(device: Device): React.ComponentType<FrameProps> {
+function bezelFrameFor(device: Device): FrameComponent {
   let frame = bezelFrames.get(device);
   if (!frame) {
     const Component = (props: FrameProps) => <BezelFrame device={device} {...props} />;
@@ -494,6 +476,34 @@ export function bezelFrameFor(device: Device): React.ComponentType<FrameProps> {
     bezelFrames.set(device, frame);
   }
   return frame;
+}
+
+const TABLET_FRAMES: Record<Orientation, FrameComponent> = { portrait: AndroidTabletP, landscape: AndroidTabletL };
+
+/** Built-in frame of each device; sizes and aspects come from lib/frame-assets.ts. */
+const BUILT_IN_FRAMES: Record<Exclude<Device, DuoDevice>, FrameComponent | Record<Orientation, FrameComponent>> = {
+  iphone: Phone,
+  ipad: IPad,
+  tvos: AppleTV,
+  watchos: AppleWatch,
+  carplay: CarPlayScreen,
+  mac: MacWindow,
+  android: AndroidPhone,
+  "android-7": TABLET_FRAMES,
+  "android-10": TABLET_FRAMES,
+  // The Play Store banner draws no device.
+  "feature-graphic": Phone,
+  "creative-universal": Phone,
+  "creative-header": Phone,
+  "creative-search": Phone,
+};
+
+/** The frame component that draws `device`: its Apple bezel when measured, otherwise its built-in frame. */
+export function frameComponent(device: Device, orientation: Orientation): FrameComponent {
+  if (device in DUO_FRAMES) return DUO_FRAMES[device as DuoDevice];
+  if (bezelGeometry(device)) return bezelFrameFor(device);
+  const frame = BUILT_IN_FRAMES[device as Exclude<Device, DuoDevice>];
+  return typeof frame === "function" ? frame : frame[orientation];
 }
 
 function EmptySlot() {
@@ -528,31 +538,27 @@ function EmptySlot() {
   );
 }
 
-// ---------- Apple TV ----------
 // The screenshot IS the content, so there is no device UI to draw. A thin dark
-// bezel reads as "TV" without competing with the capture. `bare` renders the
-// capture edge-to-edge with no bezel at all.
-export function AppleTV({ src, alt = "", style, hideEmpty, bare }: FrameProps & { bare?: boolean }) {
+// bezel reads as "TV" without competing with the capture.
+function AppleTV({ src, style, hideEmpty }: FrameProps) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: "16 / 9", ...style }}>
+    <div style={{ position: "relative", aspectRatio: FRAME_ASPECT.tv, ...style }}>
       <div
         style={{
           width: "100%", height: "100%",
-          borderRadius: bare ? "0.6% / 1.1%" : "1.1% / 2.0%",
-          background: bare ? "transparent" : "#0A0A0C",
-          padding: bare ? "0" : "0.9%",
+          borderRadius: "1.1% / 2.0%",
+          background: "#0A0A0C",
+          padding: "0.9%",
           boxSizing: "border-box",
-          boxShadow: bare
-            ? "0 18px 60px rgba(0,0,0,0.28)"
-            : "0 22px 70px rgba(0,0,0,0.40), inset 0 0 0 1px rgba(255,255,255,0.06)",
+          boxShadow: "0 22px 70px rgba(0,0,0,0.40), inset 0 0 0 1px rgba(255,255,255,0.06)",
           overflow: "hidden",
         }}
       >
         <div style={{ width: "100%", height: "100%", overflow: "hidden", background: "#111",
-                      borderRadius: bare ? "0.6% / 1.1%" : "0.5% / 0.9%" }}>
+                      borderRadius: "0.5% / 0.9%" }}>
           {resolved ? (
-            <img src={resolved} alt={alt} draggable={false}
+            <img src={resolved} alt="" draggable={false}
                  style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
           ) : hideEmpty ? null : (<EmptySlot />)}
         </div>
@@ -561,14 +567,13 @@ export function AppleTV({ src, alt = "", style, hideEmpty, bare }: FrameProps & 
   );
 }
 
-// ---------- Apple Watch ----------
 // Cushion-shaped body with a very large corner radius, plus the digital crown and
 // side button on the right. The bezel is proportionally much thicker than a phone's,
 // which is what makes a watch read as a watch at small sizes.
-export function AppleWatch({ src, alt = "", style, hideEmpty }: FrameProps) {
+function AppleWatch({ src, style, hideEmpty }: FrameProps) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: "422 / 514", ...style }}>
+    <div style={{ position: "relative", aspectRatio: FRAME_ASPECT.watch, ...style }}>
       {/* crown + side button */}
       <div style={{ position: "absolute", right: "-2.6%", top: "27%", width: "3.4%", height: "12%",
                     background: "linear-gradient(180deg,#8E8E93,#5A5A5E)", borderRadius: "40%" }} />
@@ -588,7 +593,7 @@ export function AppleWatch({ src, alt = "", style, hideEmpty }: FrameProps) {
         <div style={{ width: "100%", height: "100%", overflow: "hidden", background: "#000",
                       borderRadius: "22% / 18%" }}>
           {resolved ? (
-            <img src={resolved} alt={alt} draggable={false}
+            <img src={resolved} alt="" draggable={false}
                  style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
           ) : hideEmpty ? null : (<EmptySlot />)}
         </div>
@@ -597,14 +602,13 @@ export function AppleWatch({ src, alt = "", style, hideEmpty }: FrameProps) {
   );
 }
 
-// ---------- CarPlay ----------
 // A dashboard head unit: wide, squared-off, minimal bezel. Deliberately plainer than
 // the TV frame because CarPlay screens are set into a fascia rather than being a
 // product silhouette anyone recognises.
-export function CarPlayScreen({ src, alt = "", style, hideEmpty }: FrameProps) {
+function CarPlayScreen({ src, style, hideEmpty }: FrameProps) {
   const resolved = img(src);
   return (
-    <div style={{ position: "relative", aspectRatio: "800 / 480", ...style }}>
+    <div style={{ position: "relative", aspectRatio: FRAME_ASPECT.carplay, ...style }}>
       <div
         style={{
           width: "100%", height: "100%",
@@ -619,7 +623,7 @@ export function CarPlayScreen({ src, alt = "", style, hideEmpty }: FrameProps) {
         <div style={{ width: "100%", height: "100%", overflow: "hidden", background: "#000",
                       borderRadius: "1.4% / 2.3%" }}>
           {resolved ? (
-            <img src={resolved} alt={alt} draggable={false}
+            <img src={resolved} alt="" draggable={false}
                  style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />
           ) : hideEmpty ? null : (<EmptySlot />)}
         </div>

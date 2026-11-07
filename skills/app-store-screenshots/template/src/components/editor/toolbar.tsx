@@ -19,19 +19,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SCREENSHOT_FONTS, THEMES, fontAvailable, screenshotFontFamily, themeById } from "@/lib/constants";
 import {
-  DEVICE_LABEL,
-  IMPORTED_FONT_FAMILY,
-  PLATFORM_DEVICES,
-  SCREENSHOT_FONTS,
-  ORIENTATION_PAIRS,
-  THEMES,
+  DEVICES,
+  PLATFORMS,
   deviceForOrientation,
+  staysStraight,
   orientationOf,
+  platformDevices as devicesOf,
+  platformOf,
   supportsLandscape,
-  themeById,
-} from "@/lib/constants";
-import { detectPlatform } from "@/lib/defaults";
+} from "@/lib/devices";
 import type { Device, ImportedFont, Orientation, Platform, Scene, ScreenshotFontId, Theme } from "@/lib/types";
 import { FontImporter, type FontImporterHandle } from "./font-importer";
 import { ScenePlayground } from "./scene-playground";
@@ -74,39 +72,30 @@ type Props = {
 };
 
 export function Toolbar(props: Props) {
-  const platform = detectPlatform(props.device);
+  const platform = platformOf(props.device);
   const hasLandscape = supportsLandscape(props.device);
   const [resetOpen, setResetOpen] = React.useState(false);
 
-  // Track last device per platform so the platform tabs preserve the user's choice.
-  const lastByPlatform = React.useRef<Record<Platform, Device>>({
-    ios: platform === "ios" ? props.device : "iphone",
-    macos: platform === "macos" ? props.device : "mac",
-    android: platform === "android" ? props.device : "android",
-  });
+  const lastByPlatform = React.useRef<Record<Platform, Device>>(
+    Object.fromEntries(PLATFORMS.map(({ id }) => [id, id === platform ? props.device : devicesOf(id)[0]])) as Record<Platform, Device>,
+  );
   React.useEffect(() => {
     lastByPlatform.current[platform] = props.device;
   }, [platform, props.device]);
 
   const showLocale = props.locales.length > 1;
 
-  const deviceLabel = DEVICE_LABEL[props.device];
   // Paired orientations share one picker entry; the Orientation menu switches.
   const pickerDevice = deviceForOrientation(props.device, "portrait");
-  const platformDevices = PLATFORM_DEVICES[platform].filter((d) => deviceForOrientation(d, "portrait") === d);
+  const platformDevices = devicesOf(platform).filter((d) => deviceForOrientation(d, "portrait") === d);
   const orientation = orientationOf(props.device, props.orientation);
   const activeTheme = themeById(props.themeId);
 
   const fontImporter = React.useRef<FontImporterHandle>(null);
   const [importingFont, setImportingFont] = React.useState(false);
-  // "Imported font" is only a choice once a file has actually been imported.
-  const fontIds = (Object.keys(SCREENSHOT_FONTS) as ScreenshotFontId[]).filter(
-    (id) => id !== "self-hosted" || !!props.importedFont,
-  );
+  const fontIds = (Object.keys(SCREENSHOT_FONTS) as ScreenshotFontId[]).filter((id) => fontAvailable(id, props.importedFont));
   const fontLabel = (id: ScreenshotFontId) =>
     id === "self-hosted" && props.importedFont?.name ? props.importedFont.name : SCREENSHOT_FONTS[id].name;
-  const fontPreviewFamily = (id: ScreenshotFontId) =>
-    id === "self-hosted" ? `"${IMPORTED_FONT_FAMILY}", sans-serif` : SCREENSHOT_FONTS[id].family;
 
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b bg-card/40 px-4 py-2">
@@ -152,7 +141,7 @@ export function Toolbar(props: Props) {
         <FlaskConical className="h-3.5 w-3.5" />
         Style Lab
       </Button>
-      <ScenePlayground scene={props.scene} theme={activeTheme} disabled={props.busy} straightDevices={props.device.startsWith("duo-")} onChange={props.setScene} />
+      <ScenePlayground scene={props.scene} theme={activeTheme} disabled={props.busy} straightDevices={staysStraight(props.device)} onChange={props.setScene} />
 
       <Select value={activeTheme.id} onValueChange={props.setThemeId} disabled={props.busy}>
         <SelectTrigger className="h-8 w-40 text-xs" title="Theme" aria-label="Theme">
@@ -185,7 +174,7 @@ export function Toolbar(props: Props) {
         <SelectContent>
           {fontIds.map((id) => (
             <SelectItem key={id} value={id}>
-              <span style={{ fontFamily: fontPreviewFamily(id) }}>{fontLabel(id)}</span>
+              <span style={{ fontFamily: screenshotFontFamily(id) }}>{fontLabel(id)}</span>
             </SelectItem>
           ))}
           <SelectSeparator />
@@ -210,35 +199,30 @@ export function Toolbar(props: Props) {
         }}
       >
         <TabsList className="h-8 p-0.5">
-          <TabsTrigger value="ios" className="h-7 px-3 text-xs" disabled={props.busy}>
-            iOS
-          </TabsTrigger>
-          <TabsTrigger value="macos" className="h-7 px-3 text-xs" disabled={props.busy}>
-            Mac
-          </TabsTrigger>
-          <TabsTrigger value="android" className="h-7 px-3 text-xs" disabled={props.busy}>
-            Android
-          </TabsTrigger>
+          {PLATFORMS.map(({ id, label }) => (
+            <TabsTrigger key={id} value={id} className="h-7 px-3 text-xs" disabled={props.busy}>
+              {label}
+            </TabsTrigger>
+          ))}
         </TabsList>
       </Tabs>
 
-      {/* Mac has a single device, so the tab alone says which deck is open. */}
       {platformDevices.length > 1 && (
         <Select
           value={pickerDevice}
           onValueChange={(v) => {
             // Moving between Duo displays keeps the orientation you're working in.
-            const keep = ORIENTATION_PAIRS[props.device] ? orientation : "portrait";
+            const keep = DEVICES[props.device].orientations ? orientation : "portrait";
             props.setDevice(deviceForOrientation(v as Device, keep));
           }}
           disabled={props.busy}
         >
           <SelectTrigger className="h-8 w-36 text-xs" aria-label="Device" title="Device">
-            <SelectValue placeholder="Device">{DEVICE_LABEL[pickerDevice]}</SelectValue>
+            <SelectValue placeholder="Device">{DEVICES[pickerDevice].label}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {platformDevices.map((d) => (
-              <SelectItem key={d} value={d}>{DEVICE_LABEL[d]}</SelectItem>
+              <SelectItem key={d} value={d}>{DEVICES[d].label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -333,7 +317,7 @@ export function Toolbar(props: Props) {
           <DialogHeader>
             <DialogTitle>Reset to defaults?</DialogTitle>
             <DialogDescription>
-              Choose whether to reset just <span className="font-medium">{deviceLabel}</span> or every device deck. Your canvas edits, uploaded screenshots, and copy will be lost.
+              Choose whether to reset just <span className="font-medium">{DEVICES[props.device].label}</span> or every device deck. Your canvas edits, uploaded screenshots, and copy will be lost.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-wrap justify-end gap-2">
@@ -348,7 +332,7 @@ export function Toolbar(props: Props) {
                 props.onResetDevice();
               }}
             >
-              Reset {deviceLabel} only
+              Reset {DEVICES[props.device].label} only
             </Button>
             <Button
               variant="destructive"

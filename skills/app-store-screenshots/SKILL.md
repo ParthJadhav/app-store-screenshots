@@ -688,7 +688,7 @@ Every Apple TV and Apple Watch size below was read from App Store Connect's own 
 | CarPlay | iPhone slots (landscape) | 2868×1320, 2778×1284, 2622×1206, 2436×1125 | 2868×1320 |
 
 - **Every export is a downscale of the canvas.** Where a slot's aspect differs slightly (Watch 422×514 → 312×390), the exporter scales to cover and trims a few edge pixels instead of stretching the frame. Keep text and the device away from the outermost ~3% on the watch.
-- **CarPlay has no App Store screenshot slot.** A CarPlay app ships inside its iPhone app, so a CarPlay shot is uploaded **into the iPhone slot**, in landscape (iPhone slots accept both orientations). The `carplay` device is a head-unit frame on a landscape 6.9" iPhone canvas for exactly that. Head units vary by vehicle; the frame uses Apple's CarPlay Simulator "Standard" 800×480 preset (5:3). Change `CARPLAY_RATIO` in `src/lib/constants.ts` for another preset (Minimum 748×456, Widescreen 1920×720, Portrait 900×1200, Video Playback 1920×1080).
+- **CarPlay has no App Store screenshot slot.** A CarPlay app ships inside its iPhone app, so a CarPlay shot is uploaded **into the iPhone slot**, in landscape (iPhone slots accept both orientations). The `carplay` device is a head-unit frame on a landscape 6.9" iPhone canvas for exactly that. Head units vary by vehicle; the frame uses Apple's CarPlay Simulator "Standard" 800×480 preset (5:3). Change `FRAME_ASPECT.carplay` in `src/lib/frame-assets.ts` for another preset (Minimum 748×456, Widescreen 1920×720, Portrait 900×1200, Video Playback 1920×1080).
 - **TV, Watch and CarPlay frames are contained.** Phones and tablets deliberately bleed off the canvas edge; a cropped TV, watch face or head unit reads as a mistake, so these devices always stay fully inside the canvas.
 - **Layouts:** `split-landscape` (caption left, device right) is the strongest layout for the wide TV and CarPlay canvases. On the watch, keep headlines to two or three short words per line — the canvas is only 422 px wide.
 - **Screenshots:** use real captures at native resolution — Apple TV 3840×2160 or 1920×1080 from the tvOS simulator, Apple Watch from the watchOS simulator, CarPlay from the CarPlay Simulator (or Xcode's I/O → External Displays → CarPlay).
@@ -794,7 +794,7 @@ Every Apple TV and Apple Watch size below was read from App Store Connect's own 
 
 ## Project Migration
 
-The current editor saves `schemaVersion: 3` (v3 adds the iPhone Duo and creative decks). The migration recipe above still writes `schemaVersion: 2`, which the editor accepts and upgrades to v3 on its next save, adding the new decks without touching existing ones. Existing projects made by earlier versions of this skill usually have no `schemaVersion` and may still store string `label` / `headline` values. Do not hand-edit those projects unless the JSON is invalid. On load, `src/lib/storage.ts`:
+The current editor saves `schemaVersion: 3` (v3 adds the iPhone Duo and creative decks). The migration recipe above still writes `schemaVersion: 2`, which the editor accepts and upgrades to v3 on its next save, adding the new decks without touching existing ones. Existing projects made by earlier versions of this skill usually have no `schemaVersion` and may still store string `label` / `headline` values. Do not hand-edit those projects unless the JSON is invalid. On load, `src/lib/storage.ts` (through `src/lib/project-schema.ts`):
 
 1. Converts legacy string copy to localized `{ "en": "..." }` objects.
 2. Sanitizes existing element transforms.
@@ -849,10 +849,14 @@ project/
     │   │   └── device-frames.tsx       # Phone, IPad, AppleTV, AppleWatch, CarPlayScreen, MacWindow, Android
     │   └── ui/                         # Minimal ShadCN primitives (button, select, etc.)
     └── lib/
-        ├── constants.ts                # Canvas sizes, export sizes, themes, screenshot fonts, frame ratios
+        ├── constants.ts                # Themes and screenshot fonts
+        ├── devices.ts                  # Every target: canvas size, export sizes, platform, orientations
+        ├── frame-assets.ts             # Frame aspects and sizes, Apple bezel measurement
+        ├── layouts.ts                  # Layout names and default element placements
         ├── defaults.ts                 # Initial slide decks per device
         ├── types.ts                    # Slide / ProjectState / Theme types
         ├── storage.ts                  # useProject() — autosave + undo/redo history
+        ├── project-schema.ts           # Project JSON validation and migration on load
         ├── image-cache.ts              # preloadImages + img() helper
         ├── contrast.ts                 # Readable caption colours on custom backgrounds
         ├── export-render.ts            # Slide → PNG; waits for every screenshot to paint

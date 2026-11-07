@@ -1,7 +1,8 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { cleanFontName } from "@/lib/clean-imported-font";
+import { readAsDataUrl } from "@/lib/image-cache";
+import { UPLOADED_ASSETS, UPLOAD_ERRORS, cleanFontName } from "@/lib/uploaded-assets";
 import type { ImportedFont } from "@/lib/types";
 
 export type FontImporterHandle = { open: () => void };
@@ -11,15 +12,8 @@ type Props = {
   onUploadingChange?: (uploading: boolean) => void;
 };
 
-const MAX_FONT_BYTES = 16 * 1024 * 1024;
-
 async function fileToBase64(file: File): Promise<string> {
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  const dataUrl = await readAsDataUrl(file);
   return dataUrl.slice(dataUrl.indexOf(",") + 1);
 }
 
@@ -39,7 +33,7 @@ export const FontImporter = React.forwardRef<FontImporterHandle, Props>(function
     const request = ++requestId.current;
     onUploadingChange?.(true);
     try {
-      if (file.size > MAX_FONT_BYTES) throw new Error("Font file is too large (16MB maximum).");
+      if (file.size > UPLOADED_ASSETS.font.maxBytes) throw new Error(UPLOAD_ERRORS.fontTooLarge);
       await new FontFace("Import validation", await file.arrayBuffer()).load();
       if (request !== requestId.current) return;
       const response = await fetch("/api/upload-font", {
@@ -72,7 +66,7 @@ export const FontImporter = React.forwardRef<FontImporterHandle, Props>(function
     <input
       ref={inputRef}
       type="file"
-      accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff,font/ttf,font/otf"
+      accept={Object.entries(UPLOADED_ASSETS.font.types).flatMap(([ext, mime]) => [`.${ext}`, mime]).join(",")}
       className="sr-only"
       tabIndex={-1}
       aria-hidden

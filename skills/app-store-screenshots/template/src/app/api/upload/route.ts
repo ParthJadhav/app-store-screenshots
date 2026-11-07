@@ -1,20 +1,15 @@
-import { createHash } from "node:crypto";
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { NextResponse } from "next/server";
-import { rejectCrossSiteWrite, sniffImageType } from "@/lib/request-guard";
 import sharp from "sharp";
+import { saveAsset } from "@/lib/asset-files";
+import { rejectCrossSiteWrite, sniffImageType } from "@/lib/request-guard";
 import { decodeBase64, readJsonBody } from "@/lib/request-body";
-import { writeAsset } from "@/lib/write-asset";
+import { UPLOADED_ASSETS, UPLOAD_ERRORS } from "@/lib/uploaded-assets";
 
 export const dynamic = "force-dynamic";
 
-const UPLOAD_DIR_REL = path.join("public", "screenshots", "uploaded");
-const PUBLIC_PREFIX = "/screenshots/uploaded";
-
+const { types, maxBytes, maxPixels } = UPLOADED_ASSETS.image;
 const MIME_EXT: Record<string, string> = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
+  ...Object.fromEntries(Object.entries(types).map(([ext, mime]) => [mime, ext])),
   "image/jpg": "jpg",
 };
 
@@ -32,7 +27,7 @@ export async function POST(req: Request) {
   if (blocked) {
     return NextResponse.json({ ok: false, error: blocked.error }, { status: blocked.status });
   }
-  const input = await readJsonBody(req, 12 * 1024 * 1024);
+  const input = await readJsonBody(req, UPLOADED_ASSETS.image.maxRequestBytes);
   if (input.response) return input.response;
   const body = input.value as { dataUrl?: string } | null;
   if (!body?.dataUrl || typeof body.dataUrl !== "string") {
@@ -58,26 +53,19 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  if (parsed.bytes.byteLength > 8 * 1024 * 1024) {
-    return NextResponse.json({ ok: false, error: "Image too large (>8MB)" }, { status: 413 });
+  if (parsed.bytes.byteLength > maxBytes) {
+    return NextResponse.json({ ok: false, error: UPLOAD_ERRORS.imageTooLarge }, { status: 413 });
   }
 
   try {
     // Decode pixels too: valid headers alone still accept truncated images.
-    await sharp(parsed.bytes, { limitInputPixels: 64 * 1024 * 1024, failOn: "warning" }).stats();
+    await sharp(parsed.bytes, { limitInputPixels: maxPixels, failOn: "warning" }).stats();
   } catch {
-    return NextResponse.json({ ok: false, error: "Image is corrupt or exceeds 64 megapixels" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: UPLOAD_ERRORS.imageCorrupt }, { status: 400 });
   }
 
-  const hash = createHash("sha1").update(parsed.bytes).digest("hex").slice(0, 16);
-  const filename = `${hash}.${ext}`;
-  const absDir = path.join(process.cwd(), UPLOAD_DIR_REL);
-  const absFile = path.join(absDir, filename);
-
   try {
-    await fs.mkdir(absDir, { recursive: true });
-    await writeAsset(absFile, parsed.bytes);
-    return NextResponse.json({ ok: true, path: `${PUBLIC_PREFIX}/${filename}` });
+    return NextResponse.json({ ok: true, path: await saveAsset("image", parsed.bytes, ext) });
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : String(e) },

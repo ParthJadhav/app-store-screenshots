@@ -1,6 +1,6 @@
 import { DEFAULT_LOCALE } from "./locale";
-import { DEFAULT_SCREENSHOT_FONT_ID, DEFAULT_THEME_ID, PLATFORM_DEVICES, PROJECT_SCHEMA_VERSION } from "./constants";
-import type { Device, Platform, ProjectState, Slide } from "./types";
+import { DEFAULT_SCREENSHOT_FONT_ID, DEFAULT_THEME_ID, PROJECT_SCHEMA_VERSION } from "./constants";
+import type { ProjectState, Slide } from "./types";
 
 let _id = 0;
 export const nid = () => `s_${Date.now().toString(36)}_${(_id++).toString(36)}`;
@@ -229,7 +229,7 @@ export const DEFAULT_PROJECT: ProjectState = {
   },
 };
 
-export function newSlide(layout: Slide["layout"] = "device-bottom"): Slide {
+export function newSlide(layout: Slide["layout"]): Slide {
   return {
     id: nid(),
     layout,
@@ -237,9 +237,4 @@ export function newSlide(layout: Slide["layout"] = "device-bottom"): Slide {
     headline: en("Edit this\nheadline."),
     screenshot: "",
   };
-}
-
-export function detectPlatform(device: Device): Platform {
-  const platforms = Object.keys(PLATFORM_DEVICES) as Platform[];
-  return platforms.find((p) => PLATFORM_DEVICES[p].includes(device)) ?? "ios";
 }

@@ -8,9 +8,8 @@ import { resolveScreenshot } from "@/lib/locale";
 import { CALLOUT_ZOOM_MAX, CALLOUT_ZOOM_MIN, DEFAULT_CALLOUT } from "@/lib/scene";
 import { cn } from "@/lib/utils";
 import type { Callout, Device, ElementId, Orientation, Slide } from "@/lib/types";
-import { getElementTransform, SCREEN_WIDTH_FRACTION } from "./slide-canvas";
+import { SCREEN_WIDTH_FRACTION, getElementTransform } from "@/lib/layouts";
 
-/** Inspector section for the per-screen magnified callout ("Magnifier"). */
 export function CalloutControls({
   slide,
   device,
