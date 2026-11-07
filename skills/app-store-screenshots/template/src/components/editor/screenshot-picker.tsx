@@ -4,6 +4,7 @@ import { Image as ImageIcon, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { didFail, img, setImage } from "@/lib/image-cache";
 import { resolveScreenshot } from "@/lib/locale";
+import { UPLOADED_ASSETS, readFileAsDataUrl } from "@/lib/uploaded-assets";
 
 type Props = {
   label: string;
@@ -12,17 +13,8 @@ type Props = {
   onChange: (v: string) => void;
 };
 
-const ACCEPTED = ["image/png", "image/jpeg"];
+const { types, maxBytes, maxPixels } = UPLOADED_ASSETS.image;
 class UploadRejectedError extends Error {}
-
-async function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 async function uploadDataUrl(dataUrl: string): Promise<string | null> {
   try {
@@ -61,17 +53,17 @@ export function ScreenshotPicker({ label, value, locale, onChange }: Props) {
     const request = ++requestId.current;
     setUploading(false);
     setError(null);
-    if (!ACCEPTED.includes(file.type)) {
+    if (!Object.values(types).includes(file.type)) {
       setError("Use PNG or JPG (App Store rejects other formats)");
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
+    if (file.size > maxBytes) {
       setError("Image too large (>8MB)");
       return;
     }
     let dataUrl: string;
     try {
-      dataUrl = await fileToDataUrl(file);
+      dataUrl = await readFileAsDataUrl(file);
     } catch {
       if (request === requestId.current) setError("Failed to read file");
       return;
@@ -82,7 +74,7 @@ export function ScreenshotPicker({ label, value, locale, onChange }: Props) {
       const image = new Image();
       image.src = dataUrl;
       await image.decode();
-      if (image.naturalWidth * image.naturalHeight > 64 * 1024 * 1024) throw new Error("too large");
+      if (image.naturalWidth * image.naturalHeight > maxPixels) throw new Error("too large");
       size = { w: image.naturalWidth, h: image.naturalHeight };
     } catch {
       if (request === requestId.current) setError("Image is corrupt or exceeds 64 megapixels");
