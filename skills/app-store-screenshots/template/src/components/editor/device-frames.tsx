@@ -14,7 +14,6 @@ type FrameProps = {
 
 type FrameComponent = React.ComponentType<FrameProps>;
 
-// iPhone — uses pre-measured mockup.png overlay
 function Phone({ src, style, hideEmpty }: FrameProps) {
   const resolved = img(src);
   return (
@@ -347,16 +346,14 @@ function IPad({ src, style, hideEmpty }: FrameProps) {
   );
 }
 
-// ---------- iPhone Duo ----------
 // Geometry comes from Apple's bezel in public/frames/ (measured by
 // /api/frames) or, without one, a drawn frame whose screen has the capture's
 // exact aspect. The frame fits itself inside whatever box it is given, so a
 // placement saved with a different bezel never stretches it.
 
 // A device drawn under Apple's bezel (or, for iPhone Duo without one, a drawn
-// stand-in). Mac captures are 16:10 but MacBook screens are a little taller, so
-// a Mac capture fills the screen from the top and loses a sliver at the bottom,
-// like the built-in Mac window; everything else is letterboxed if it doesn't fit.
+// stand-in). A capture that doesn't fit the screen is letterboxed, unless the
+// device fills from the top (see fillsFromTop).
 function BezelFrame({ device, src, style, hideEmpty }: FrameProps & { device: Device }) {
   const g = bezelGeometry(device);
   if (!g) return null;
@@ -541,7 +538,6 @@ function EmptySlot() {
   );
 }
 
-// ---------- Apple TV ----------
 // The screenshot IS the content, so there is no device UI to draw. A thin dark
 // bezel reads as "TV" without competing with the capture.
 function AppleTV({ src, style, hideEmpty }: FrameProps) {
@@ -571,7 +567,6 @@ function AppleTV({ src, style, hideEmpty }: FrameProps) {
   );
 }
 
-// ---------- Apple Watch ----------
 // Cushion-shaped body with a very large corner radius, plus the digital crown and
 // side button on the right. The bezel is proportionally much thicker than a phone's,
 // which is what makes a watch read as a watch at small sizes.
@@ -607,7 +602,6 @@ function AppleWatch({ src, style, hideEmpty }: FrameProps) {
   );
 }
 
-// ---------- CarPlay ----------
 // A dashboard head unit: wide, squared-off, minimal bezel. Deliberately plainer than
 // the TV frame because CarPlay screens are set into a fascia rather than being a
 // product silhouette anyone recognises.

@@ -14,7 +14,6 @@ import { SceneBackdrop } from "./scene-layers";
 const TILE_W = 72;
 const TILE_H = 48;
 
-/** Toolbar popover that edits the deck-wide scene live on the canvas. */
 export function ScenePlayground({
   scene: rawScene,
   theme,

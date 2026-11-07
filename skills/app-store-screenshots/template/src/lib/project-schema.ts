@@ -166,8 +166,6 @@ function cleanFontId(value: unknown, importedFont: ImportedFont | undefined): Sc
   return fontAvailable(id as ScreenshotFontId, importedFont) ? (id as ScreenshotFontId) : DEFAULT_SCREENSHOT_FONT_ID;
 }
 
-// Migrate older projects into the current schema while keeping legacy decks
-// visually stable until they explicitly opt into connected canvas.
 function migrateSlide(slide: Slide): Slide {
   const backgroundColor = cleanHexColor(slide.backgroundColor);
   const transforms = slide.transforms
@@ -248,7 +246,6 @@ export function normalizeProject(parsed: Partial<ProjectState>): ProjectState {
       ...slidesByDevice,
     } as ProjectState["slidesByDevice"],
   };
-  // Duo decks are fixed to one orientation each, and portrait-only decks to portrait.
   merged.orientation = validOrientation(merged.device, merged.orientation);
   // Clamp the active locale into the project's locale list so a stale
   // `locale` (e.g. from a project that dropped languages) doesn't show blank.

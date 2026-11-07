@@ -97,7 +97,6 @@ export function ScreenshotEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, framesLoaded, assetSig]);
 
-  // Surface storage failures (quota exceeded etc.) so the user knows their work isn't safe.
   React.useEffect(() => {
     if (saveError) {
       toast.error("Couldn't load or save project file", {
@@ -190,8 +189,6 @@ export function ScreenshotEditor() {
     [setState],
   );
 
-  // ---------- Keyboard shortcuts ----------
-
   React.useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
@@ -208,7 +205,6 @@ export function ScreenshotEditor() {
         return;
       }
 
-      // Undo/redo belongs to the text field while one is focused.
       const mod = e.metaKey || e.ctrlKey;
       if (mod && !e.altKey && (e.key === "z" || e.key === "Z" || e.key === "y" || e.key === "Y")) {
         if (inTextField) return;
@@ -218,7 +214,6 @@ export function ScreenshotEditor() {
         return;
       }
 
-      // Arrow keys, deletion etc. keep their native meaning inside any input.
       if (inControl) return;
 
       if (!currentSlides.length) return;
@@ -246,8 +241,6 @@ export function ScreenshotEditor() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [activeSlide, currentSlides, duplicateSlide, deleteSlide, exporting, undo, redo]);
-
-  // ---------- Export ----------
 
   async function exportAll() {
     if (exportInProgress.current) return;
@@ -466,8 +459,6 @@ export function ScreenshotEditor() {
     }
   }
 
-  // ---------- Render ----------
-
   if (!hydrated || !ready || !framesLoaded) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -641,7 +632,6 @@ export function ScreenshotEditor() {
         }
       />
 
-      {/* Off-screen export container — full-resolution canvases for html-to-image. */}
       <div
         aria-hidden
         style={{

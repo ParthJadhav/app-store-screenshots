@@ -1,6 +1,5 @@
 import type { ImportedFont, ScreenshotFontId, Theme, ThemeId } from "./types";
 
-// ---------- Themes ----------
 export const DEFAULT_THEME_ID: ThemeId = "clean-light";
 
 export const DEFAULT_SCREENSHOT_FONT_ID: ScreenshotFontId = "template-default";

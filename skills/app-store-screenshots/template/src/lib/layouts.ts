@@ -151,8 +151,6 @@ function getDefaultRects(
   }
 }
 
-// ---------- iPhone Duo placements ----------
-//
 // Duo decks get their own placements, modelled on the first published Duo sets
 // and Apple's guidance (see iphone-duo.md in the skill):
 // - Landscape canvases (inner display opened, outer turned) are about as wide as

@@ -142,7 +142,6 @@ export function useProject() {
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
 
-  // Debounced autosave to BOTH localStorage (fast, offline) and file (git-trackable).
   useEffect(() => {
     if (!hydrated || !fileReady) return;
     if (timer.current) clearTimeout(timer.current);

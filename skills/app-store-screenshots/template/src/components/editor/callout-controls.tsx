@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 import type { Callout, Device, ElementId, Orientation, Slide } from "@/lib/types";
 import { SCREEN_WIDTH_FRACTION, getElementTransform } from "@/lib/layouts";
 
-/** Inspector section for the per-screen magnified callout ("Magnifier"). */
 export function CalloutControls({
   slide,
   device,

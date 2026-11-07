@@ -521,7 +521,6 @@ function ElementTransformControls({
     onSelectElement(toImageElementId(id));
   }
 
-  // Z-order: re-rank zIndex among present elements so they remain contiguous.
   function reorder(id: ElementId, dir: "front" | "back" | "up" | "down") {
     const ranked = [...present].sort((a, b) => {
       return elementZ(slide, a) - elementZ(slide, b);

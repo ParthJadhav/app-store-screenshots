@@ -30,7 +30,6 @@ type Props = {
   onDuplicate: () => void;
 };
 
-// Thumb tile target width (pixels). Height is derived from device aspect.
 const THUMB_W = 60;
 
 export function SlideThumb({

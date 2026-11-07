@@ -76,7 +76,6 @@ export function Toolbar(props: Props) {
   const hasLandscape = supportsLandscape(props.device);
   const [resetOpen, setResetOpen] = React.useState(false);
 
-  // Track last device per platform so the platform tabs preserve the user's choice.
   const lastByPlatform = React.useRef<Record<Platform, Device>>(
     Object.fromEntries(PLATFORMS.map(({ id }) => [id, id === platform ? props.device : devicesOf(id)[0]])) as Record<Platform, Device>,
   );
@@ -94,7 +93,6 @@ export function Toolbar(props: Props) {
 
   const fontImporter = React.useRef<FontImporterHandle>(null);
   const [importingFont, setImportingFont] = React.useState(false);
-  // "Imported font" is only a choice once a file has actually been imported.
   const fontIds = (Object.keys(SCREENSHOT_FONTS) as ScreenshotFontId[]).filter((id) => fontAvailable(id, props.importedFont));
   const fontLabel = (id: ScreenshotFontId) =>
     id === "self-hosted" && props.importedFont?.name ? props.importedFont.name : SCREENSHOT_FONTS[id].name;
@@ -209,7 +207,6 @@ export function Toolbar(props: Props) {
         </TabsList>
       </Tabs>
 
-      {/* Mac has a single device, so the tab alone says which deck is open. */}
       {platformDevices.length > 1 && (
         <Select
           value={pickerDevice}

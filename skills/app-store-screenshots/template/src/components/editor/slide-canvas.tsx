@@ -97,8 +97,6 @@ type DeckCanvasProps = {
   stripCount?: number;
 };
 
-// ---------- Editable text helpers ----------
-
 function EditableText({
   value,
   editable,
@@ -180,8 +178,6 @@ function EditableText({
   );
 }
 
-// ---------- Caption (label + headline) ----------
-
 function Caption({
   cW,
   cH,
@@ -256,8 +252,6 @@ function Caption({
   );
 }
 
-// ---------- Decorative blob ----------
-
 function Blob({
   cW,
   color,
@@ -290,8 +284,6 @@ function Blob({
     />
   );
 }
-
-// ---------- Main single-screen canvas ----------
 
 export function SlideCanvas({
   slide,
@@ -369,8 +361,6 @@ export function SlideCanvas({
     </div>
   );
 }
-
-// ---------- Connected deck canvas ----------
 
 export function DeckCanvas({
   slides,
@@ -893,9 +883,7 @@ function SlideElements({
     );
   }
 
-  // On iPhone Duo the back device is the same phone in its other state. Duo
-  // frames also ignore the scene's tilt: Apple's marketing guidelines ask for
-  // straight-on product images.
+  // On iPhone Duo the back device is the same phone in its other state.
   const companion = isDuoDevice(device) ? duoCompanion(device) : null;
 
   function renderDevice(id: "device" | "deviceSecondary", rect: Rect, src: string, extraStyle?: React.CSSProperties) {
@@ -1099,8 +1087,6 @@ function SlideElements({
   );
 }
 
-// ---------- Movable wrapper ----------
-
 // Fraction of an element's width/height that must remain inside the canvas
 // when overflow is allowed. Keeps a graspable handle visible so the user can
 // always drag the element back onto the canvas.
@@ -1226,7 +1212,6 @@ function Movable({
   // somewhere the user never saw it.
   const display = clampRect(rect, boundsW, boundsH, allowOverflow);
 
-  // Non-editable (export/thumb) path: plain absolute-positioned div, no Rnd.
   if (!editable) {
     return (
       <div
