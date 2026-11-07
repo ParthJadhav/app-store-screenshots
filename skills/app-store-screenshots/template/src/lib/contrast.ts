@@ -37,6 +37,11 @@ export function contrastRatio(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
+/** Backgrounds darker than this get light text treatment (subtle shadows, softer blobs). */
+export function isDarkColor(hex: string): boolean {
+  return (relativeLuminance(hex) ?? 1) < 0.18;
+}
+
 function firstReadable(bg: string, candidates: (string | undefined)[], min: number) {
   return candidates.find((c): c is string => !!c && contrastRatio(c, bg) >= min);
 }
@@ -65,7 +70,7 @@ export function slideColors(theme: Theme, slide: Pick<Slide, "inverted" | "backg
   if (!bg || relativeLuminance(bg) === null) {
     return { fg: themeFg, accent: themeAccent, dark: inverted };
   }
-  const dark = (relativeLuminance(bg) ?? 1) < 0.18;
+  const dark = isDarkColor(bg);
   const fallback = contrastRatio(DARK_TEXT, bg) >= contrastRatio(LIGHT_TEXT, bg) ? DARK_TEXT : LIGHT_TEXT;
   const fg = firstReadable(bg, [themeFg, inverted ? theme.fg : theme.fgAlt], TEXT_CONTRAST) ?? fallback;
   const accent =

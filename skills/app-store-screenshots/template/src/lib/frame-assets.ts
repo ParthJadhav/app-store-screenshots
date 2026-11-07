@@ -1,4 +1,5 @@
-// Device frame geometry from Apple's product bezels.
+// Device frame geometry: the built-in frames' aspects and how wide each device
+// is placed, and Apple's product bezels when the user has added them.
 //
 // Apple's bezels (developer.apple.com/design/resources, Product Bezels) ship in
 // public/frames/; swapping a file changes the finish (see README). Apple
@@ -7,10 +8,8 @@
 // the real bezel. Without a file, iPhone Duo uses a drawn frame whose screen has
 // the exact capture aspect, and every other device keeps its built-in frame.
 // Android and CarPlay never use Apple bezels.
-import { DUO_INNER_SCREEN, DUO_OUTER_SCREEN } from "./constants";
-import type { Device } from "./types";
-
-export type DuoDevice = Extract<Device, `duo-${string}`>;
+import { DEVICES, isDuoDevice, type DuoDevice } from "./devices";
+import type { Device, Orientation } from "./types";
 
 /** File names (without .png) looked for in public/frames/. */
 export const FRAME_FILES = [
@@ -26,27 +25,163 @@ export const FRAME_FILES = [
 ] as const;
 export type FrameFile = (typeof FRAME_FILES)[number];
 
+// Mac window: a 16:10 content area under a title bar MAC_TITLE_BAR x the content
+// height tall, so a 16:10 capture (the Mac App Store's own aspect) fills the
+// window without being cropped.
+export const MAC_TITLE_BAR = 0.045;
+
+/** Aspect (w/h) of each built-in frame drawn in device-frames.tsx. */
+export const FRAME_ASPECT = {
+  iphone: 1022 / 2082, // public/mockup.png
+  android: 9 / 19.5,
+  ipad: 770 / 1000,
+  tabletPortrait: 5 / 8,
+  tabletLandscape: 8 / 5,
+  tv: 16 / 9,
+  // Apple Watch Ultra, the largest accepted slot.
+  watch: 422 / 514,
+  // CarPlay head units vary by vehicle and Apple ships five presets in CarPlay
+  // Simulator.app/Contents/Resources/VehicleConfigs: Minimum 748x456, Standard 800x480,
+  // Widescreen 1920x720, Portrait 900x1200, Standard Video Playback 1920x1080.
+  // "Standard" is the default here; change this to target another.
+  carplay: 800 / 480,
+  mac: 16 / (10 * (1 + MAC_TITLE_BAR)),
+};
+
+// Screen overlay on public/mockup.png (pre-measured).
+export const PHONE_SCREEN = {
+  L: (52 / 1022) * 100,
+  T: (46 / 2082) * 100,
+  W: (918 / 1022) * 100,
+  H: (1990 / 2082) * 100,
+  RX: (126 / 918) * 100,
+  RY: (126 / 1990) * 100,
+};
+
+/**
+ * How wide a frame is placed, as a share of the canvas: wide enough that it
+ * takes `height` of the canvas height, but at most `clamp` of its width. The
+ * small size is the back device of "Two devices".
+ */
+type Fit = { height: number; clamp: number; smallClamp: number; smallHeight?: number };
+
+type BuiltInFrame = {
+  aspect: number;
+  fit: Fit;
+  /** Aspect the fit is computed with, when it isn't the drawn one. */
+  sizedAs?: number;
+  /** Apple's bezel for this device, and its fit when that differs. */
+  bezel?: FrameFile;
+  bezelFit?: Fit;
+};
+
+const PHONE_FIT: Fit = { height: 0.72, clamp: 0.84, smallClamp: 0.66 };
+
+// Creatives lay out inside their safe area (see lib/layouts.ts), so these
+// fractions are of the safe area, not the canvas. They show an iPhone.
+const CREATIVE_FRAME: BuiltInFrame = {
+  aspect: FRAME_ASPECT.iphone,
+  fit: { height: 0.62, clamp: 0.9, smallHeight: 0.5, smallClamp: 0.7 },
+  bezel: "iphone-portrait",
+};
+
+// Android frames are placed as if they had the iPhone and earlier tablet
+// aspects; changing that would move every existing Android placement.
+const TABLET_FRAME: Record<Orientation, BuiltInFrame> = {
+  portrait: { aspect: FRAME_ASPECT.tabletPortrait, sizedAs: 0.667, fit: { height: 0.72, clamp: 0.8, smallClamp: 0.62 } },
+  landscape: { aspect: FRAME_ASPECT.tabletLandscape, sizedAs: 1.5, fit: { height: 0.75, clamp: 0.62, smallClamp: 0.5 } },
+};
+
+const BUILT_IN_FRAMES: Record<Exclude<Device, DuoDevice>, BuiltInFrame | Record<Orientation, BuiltInFrame>> = {
+  iphone: { aspect: FRAME_ASPECT.iphone, fit: PHONE_FIT, bezel: "iphone-portrait" },
+  ipad: { aspect: FRAME_ASPECT.ipad, fit: { height: 0.72, clamp: 0.75, smallClamp: 0.6 }, bezel: "ipad-portrait" },
+  // Clamped low so a 16:9 device clears the 0.28-height caption block on a 16:9 canvas.
+  tvos: { aspect: FRAME_ASPECT.tv, fit: { height: 0.72, clamp: 0.58, smallClamp: 0.56 }, bezel: "tv" },
+  // Apple's watch bezel includes its band, which takes nearly half its height;
+  // the band's top stays below a two-line headline.
+  watchos: {
+    aspect: FRAME_ASPECT.watch,
+    fit: { height: 0.72, clamp: 0.52, smallClamp: 0.42 },
+    bezel: "watch",
+    bezelFit: { height: 0.66, clamp: 0.62, smallClamp: 0.5 },
+  },
+  // Height-bound on the wide canvas: the head unit must clear the caption block.
+  carplay: { aspect: FRAME_ASPECT.carplay, fit: { height: 0.58, clamp: 0.86, smallClamp: 0.7 } },
+  // Contained like the TV: height-bound so the window clears the caption block
+  // above or below it on the 16:10 canvas.
+  mac: { aspect: FRAME_ASPECT.mac, fit: { height: 0.58, clamp: 0.86, smallClamp: 0.46 }, bezel: "mac" },
+  android: { aspect: FRAME_ASPECT.android, sizedAs: FRAME_ASPECT.iphone, fit: PHONE_FIT },
+  "android-7": TABLET_FRAME,
+  "android-10": TABLET_FRAME,
+  // The Play Store banner draws no device.
+  "feature-graphic": { aspect: 1, sizedAs: FRAME_ASPECT.iphone, fit: PHONE_FIT },
+  "creative-universal": CREATIVE_FRAME,
+  "creative-header": CREATIVE_FRAME,
+  "creative-search": CREATIVE_FRAME,
+};
+
+function builtInFrame(device: Exclude<Device, DuoDevice>, orientation: Orientation): BuiltInFrame {
+  const frame = BUILT_IN_FRAMES[device];
+  return "aspect" in frame ? frame : frame[orientation];
+}
+
+// Sized from the Duo frame's real aspect, so the squarer inner display gets a
+// wider device instead of a stretched iPhone placement.
+const DUO_FIT: Record<Orientation, Fit> = {
+  portrait: { height: 0.66, clamp: 0.84, smallHeight: 0.52, smallClamp: 0.66 },
+  landscape: { height: 0.58, clamp: 0.86, smallHeight: 0.46, smallClamp: 0.7 },
+};
+
+export type FrameLayout = {
+  /** Frame width / height. */
+  aspect: number;
+  /** Frame width as a share of a `cW`×`cH` canvas. */
+  width: (cW: number, cH: number) => number;
+  /** Width of the smaller back device. */
+  smallWidth: (cW: number, cH: number) => number;
+};
+
+function fitted(aspect: number, sizedAs: number, fit: Fit): FrameLayout {
+  return {
+    aspect,
+    width: (cW, cH) => Math.min(fit.clamp, fit.height * (cH / cW) * sizedAs),
+    smallWidth: (cW, cH) => Math.min(fit.smallClamp, (fit.smallHeight ?? fit.height) * (cH / cW) * sizedAs),
+  };
+}
+
+/** The frame a device is drawn in: an Apple bezel when one is measured, otherwise the built-in frame. */
+export function frameLayout(device: Device, orientation: Orientation): FrameLayout {
+  if (isDuoDevice(device)) {
+    const { aspect } = duoGeometry(device);
+    return fitted(aspect, aspect, DUO_FIT[aspect > 1 ? "landscape" : "portrait"]);
+  }
+  const frame = builtInFrame(device, orientation);
+  const bezel = bezelGeometry(device);
+  if (bezel) return fitted(bezel.aspect, bezel.aspect, frame.bezelFit ?? frame.fit);
+  return fitted(frame.aspect, frame.sizedAs ?? frame.aspect, frame.fit);
+}
+
+// A capture whose aspect is off by more than this is letterboxed rather than
+// cropped: cropping would cut real UI, which is worse than a visible bar.
+// Loose enough for every size a device accepts: Apple Watch slots differ from
+// the Ultra's 422 × 514 screen by up to 2.6 %.
+const FIT_TOLERANCE = 0.03;
+// The two iPhone Duo displays differ by only 2.35 % (1398 × 2034 against
+// 2007 × 2853), so Duo captures must match far more closely to tell an outer
+// capture from an inner one. Scaled-down captures of the right display pass.
+const DUO_FIT_TOLERANCE = 0.005;
+
+/** Whether a capture of `size` fills `device`'s screen (`screenAspect`) without letterboxing. */
+export function captureFits(size: { w: number; h: number } | undefined, screenAspect: number, device: Device) {
+  const tolerance = isDuoDevice(device) ? DUO_FIT_TOLERANCE : FIT_TOLERANCE;
+  return !size || Math.abs(size.w / size.h / screenAspect - 1) <= tolerance;
+}
+
 const DUO_SOURCES: Record<DuoDevice, { file: FrameFile; rotateFrom?: FrameFile }> = {
   "duo-outer": { file: "duo-outer-portrait" },
   "duo-outer-landscape": { file: "duo-outer-landscape", rotateFrom: "duo-outer-portrait" },
   "duo-inner": { file: "duo-inner-portrait" },
   "duo-inner-landscape": { file: "duo-inner-landscape", rotateFrom: "duo-inner-portrait" },
-};
-
-/**
- * Which file draws each device, and which portrait file can be turned instead.
- * App Store creatives show an iPhone, so they use the iPhone bezel.
- */
-const FRAME_SOURCES: Partial<Record<Device, { file: FrameFile; rotateFrom?: FrameFile }>> = {
-  iphone: { file: "iphone-portrait" },
-  ipad: { file: "ipad-portrait" },
-  watchos: { file: "watch" },
-  tvos: { file: "tv" },
-  mac: { file: "mac" },
-  "creative-universal": { file: "iphone-portrait" },
-  "creative-header": { file: "iphone-portrait" },
-  "creative-search": { file: "iphone-portrait" },
-  ...DUO_SOURCES,
 };
 
 type PixelRect = { x: number; y: number; w: number; h: number };
@@ -94,17 +229,12 @@ export function setFrameAssets(next: Partial<Record<FrameFile, MeasuredFrame>>) 
 /** Bezel image URLs in use, so they can be preloaded for export. */
 export function frameAssetPaths(device?: Device): string[] {
   // A Duo deck also draws its companion display in "Folded + open".
-  const devices = (device
-    ? isDuoDevice(device) ? [device, DUO_COMPANION[device]] : [device]
-    : Object.keys(FRAME_SOURCES)) as Device[];
+  const companion = device && DEVICES[device].companion;
+  const devices = device ? (companion ? [device, companion] : [device]) : (Object.keys(DEVICES) as Device[]);
   return devices.flatMap((d) => {
     const image = bezelGeometry(d)?.image;
     return image ? [image.src] : [];
   });
-}
-
-export function isDuoDevice(device: Device): device is DuoDevice {
-  return Object.hasOwn(DUO_SOURCES, device);
 }
 
 /**
@@ -113,8 +243,8 @@ export function isDuoDevice(device: Device): device is DuoDevice {
  */
 export function bezelGeometry(device: Device): FrameGeometry | null {
   if (isDuoDevice(device)) return duoGeometry(device);
-  const source = FRAME_SOURCES[device];
-  const frame = source && measured[source.file];
+  const file = builtInFrame(device, "portrait").bezel;
+  const frame = file && measured[file];
   return frame ? fromMeasured(frame, false, "none") : null;
 }
 
@@ -126,8 +256,9 @@ export function duoGeometry(device: DuoDevice): FrameGeometry {
   if (direct) return fromMeasured(direct, false, camera);
   const turned = rotateFrom ? measured[rotateFrom] : undefined;
   if (turned) return fromMeasured(turned, true, camera);
-  const portrait = inner ? DUO_INNER_SCREEN : DUO_OUTER_SCREEN;
-  return drawnGeometry(device.endsWith("-landscape") ? 1 / portrait : portrait, inner, camera);
+  // Without a bezel the screen has exactly the capture's aspect.
+  const { w, h } = DEVICES[device].canvas;
+  return drawnGeometry(w / h, inner, camera);
 }
 
 function fromMeasured(frame: MeasuredFrame, rotate: boolean, camera: FrameGeometry["camera"]): FrameGeometry {
@@ -180,15 +311,3 @@ function drawnGeometry(screenAspect: number, inner: boolean, camera: FrameGeomet
     camera,
   };
 }
-
-/**
- * The same phone in its other state, for the "Folded + open" layout. Opening a
- * closed phone held upright gives the inner display in landscape (the fold runs
- * down the middle); opening it held sideways gives the inner display in portrait.
- */
-export const DUO_COMPANION: Record<DuoDevice, DuoDevice> = {
-  "duo-outer": "duo-inner-landscape",
-  "duo-inner-landscape": "duo-outer",
-  "duo-outer-landscape": "duo-inner",
-  "duo-inner": "duo-outer-landscape",
-};

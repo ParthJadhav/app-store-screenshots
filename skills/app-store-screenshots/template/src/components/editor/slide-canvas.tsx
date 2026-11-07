@@ -3,7 +3,6 @@ import * as React from "react";
 import { Rnd } from "react-rnd";
 import { RotateCw } from "lucide-react";
 import type {
-  BuiltInElementId,
   Device,
   ElementId,
   ElementTransform,
@@ -15,154 +14,26 @@ import type {
   TextElement,
   Theme,
 } from "@/lib/types";
-import {
-  CANVAS,
-  CARPLAY_RATIO,
-  CREATIVE_SPECS,
-  centredCrop,
-  frameFitW,
-  isCreative,
-  IPAD_RATIO,
-  MAC_RATIO,
-  MK_RATIO,
-  TV_RATIO,
-  WATCH_RATIO,
-  carPlayW,
-  ipadW,
-  macW,
-  phoneW,
-  phoneWSmall,
-  tabletLW,
-  tabletPW,
-  tvW,
-  watchW,
-} from "@/lib/constants";
-import { imageElementKey, isImageElementId, toImageElementId, toTextElementId } from "@/lib/elements";
+import { toImageElementId, toTextElementId } from "@/lib/elements";
 import { img } from "@/lib/image-cache";
 import { pickText, resolveScreenshot } from "@/lib/locale";
-import { relativeLuminance, slideColors } from "@/lib/contrast";
+import { isDarkColor, slideColors } from "@/lib/contrast";
 import { defaultTextElementFontSize, slideFontScales } from "@/lib/typography";
 import { sceneOf } from "@/lib/scene";
-import { DUO_COMPANION, bezelGeometry, duoGeometry, isDuoDevice, type DuoDevice } from "@/lib/frame-assets";
+import { canvasSize, centredCrop, creativeSpec, duoCompanion, isCreative, isDuoDevice } from "@/lib/devices";
+import { duoGeometry } from "@/lib/frame-assets";
 import {
-  AndroidPhone,
-  bezelFrameFor,
-  DUO_FRAMES,
-  AppleTV,
-  AppleWatch,
-  CarPlayScreen,
-  AndroidTabletL,
-  AndroidTabletP,
-  IPad,
-  MacWindow,
-  Phone,
-} from "./device-frames";
+  SCREEN_WIDTH_FRACTION,
+  elementZ,
+  getSlideGeometry,
+  isFeatureGraphic,
+  rectFor,
+  showsDevice,
+  type Rect,
+} from "@/lib/layouts";
+import { frameComponent } from "./device-frames";
 import { ImageElementCanvas } from "./image-element-canvas";
 import { CalloutLoupe, DeviceDepth, SceneBackdrop, shade } from "./scene-layers";
-
-type FrameComp = React.ComponentType<{
-  src: string;
-  alt?: string;
-  style?: React.CSSProperties;
-  hideEmpty?: boolean;
-}>;
-
-export function getCanvas(device: Device, orientation: Orientation) {
-  const c = CANVAS[device];
-  if ((device === "android-7" || device === "android-10") && orientation === "landscape") {
-    return { cW: c.wL!, cH: c.hL! };
-  }
-  return { cW: c.w, cH: c.h };
-}
-
-// Aspect ratio (w/h) of each device frame — must match device-frames.tsx
-function getFrameAspect(device: Device, orientation: Orientation) {
-  const bezel = bezelGeometry(device);
-  if (bezel) return bezel.aspect;
-  if (isCreative(device)) return MK_RATIO;
-  switch (device) {
-    case "iphone":      return MK_RATIO;
-    case "android":     return 9 / 19.5;
-    case "ipad":        return IPAD_RATIO;
-    case "tvos":        return TV_RATIO;
-    case "watchos":     return WATCH_RATIO;
-    case "carplay":     return CARPLAY_RATIO;
-    case "mac":         return MAC_RATIO;
-    case "android-7":
-    case "android-10":  return orientation === "landscape" ? 8 / 5 : 5 / 8;
-    default:            return 1;
-  }
-}
-
-// Height share and width clamps for a device under Apple's bezel; they match
-// the built-in frame's width functions in constants.ts. The watch bezel
-// includes its band, which takes nearly half its height; the band's top stays
-// below a two-line headline.
-const BEZEL_FIT: Partial<Record<Device, { height: number; clamp: number; small: number; smallHeight?: number }>> = {
-  iphone: { height: 0.72, clamp: 0.84, small: 0.66 },
-  ipad: { height: 0.72, clamp: 0.75, small: 0.6 },
-  tvos: { height: 0.72, clamp: 0.58, small: 0.56 },
-  watchos: { height: 0.66, clamp: 0.62, small: 0.5 },
-  mac: { height: 0.58, clamp: 0.86, small: 0.46 },
-  "creative-universal": { height: 0.62, clamp: 0.9, small: 0.7, smallHeight: 0.5 },
-  "creative-header": { height: 0.62, clamp: 0.9, small: 0.7, smallHeight: 0.5 },
-  "creative-search": { height: 0.62, clamp: 0.9, small: 0.7, smallHeight: 0.5 },
-};
-
-export function getFrameForDevice(device: Device, orientation: Orientation): {
-  Comp: FrameComp;
-  widthFn: (cW: number, cH: number) => number;
-  smallWidthFn: (cW: number, cH: number) => number;
-} {
-  if (isDuoDevice(device)) {
-    // Sized from the frame's real aspect, so the squarer inner display gets a
-    // wider device instead of a stretched iPhone placement.
-    const aspect = duoGeometry(device).aspect;
-    return aspect > 1
-      ? { Comp: DUO_FRAMES[device], widthFn: frameFitW(aspect, 0.58, 0.86), smallWidthFn: frameFitW(aspect, 0.46, 0.7) }
-      : { Comp: DUO_FRAMES[device], widthFn: frameFitW(aspect, 0.66, 0.84), smallWidthFn: frameFitW(aspect, 0.52, 0.66) };
-  }
-  // Apple's own bezel, when the user has added it: the same placements as the
-  // built-in frame, sized from the bezel's real aspect.
-  const bezel = bezelGeometry(device);
-  if (bezel) {
-    const fit = BEZEL_FIT[device] ?? BEZEL_FIT.iphone!;
-    return {
-      Comp: bezelFrameFor(device),
-      widthFn: frameFitW(bezel.aspect, fit.height, fit.clamp),
-      smallWidthFn: frameFitW(bezel.aspect, fit.smallHeight ?? fit.height, fit.small),
-    };
-  }
-  // Creatives lay out inside their safe area (see getSlideGeometry), so these
-  // fractions are of the safe area, not the canvas.
-  if (isCreative(device)) {
-    return { Comp: Phone, widthFn: frameFitW(MK_RATIO, 0.62, 0.9), smallWidthFn: frameFitW(MK_RATIO, 0.5, 0.7) };
-  }
-  switch (device) {
-    case "iphone":
-      return { Comp: Phone, widthFn: phoneW, smallWidthFn: phoneWSmall };
-    case "ipad":
-      return { Comp: IPad, widthFn: ipadW, smallWidthFn: (cW, cH) => ipadW(cW, cH, 0.6) };
-    case "tvos":
-      return { Comp: AppleTV, widthFn: tvW, smallWidthFn: (cW, cH) => tvW(cW, cH, 0.56) };
-    case "watchos":
-      return { Comp: AppleWatch, widthFn: watchW, smallWidthFn: (cW, cH) => watchW(cW, cH, 0.42) };
-    case "carplay":
-      return { Comp: CarPlayScreen, widthFn: carPlayW, smallWidthFn: (cW, cH) => carPlayW(cW, cH, 0.7) };
-    case "mac":
-      return { Comp: MacWindow, widthFn: macW, smallWidthFn: (cW, cH) => macW(cW, cH, 0.46) };
-    case "android":
-      return { Comp: AndroidPhone, widthFn: phoneW, smallWidthFn: phoneWSmall };
-    case "android-7":
-    case "android-10":
-      if (orientation === "landscape") {
-        return { Comp: AndroidTabletL, widthFn: tabletLW, smallWidthFn: (cW, cH) => tabletLW(cW, cH, 0.5) };
-      }
-      return { Comp: AndroidTabletP, widthFn: tabletPW, smallWidthFn: (cW, cH) => tabletPW(cW, cH, 0.62) };
-    default:
-      return { Comp: Phone, widthFn: phoneW, smallWidthFn: phoneWSmall };
-  }
-}
 
 type EditHandlers = {
   onLabelChange?: (v: string) => void;
@@ -421,332 +292,6 @@ function Blob({
   );
 }
 
-// ---------- Default element rects per layout ----------
-
-type Rect = { x: number; y: number; width: number; height: number };
-type LayoutRects = {
-  caption?: Rect & { align?: "center" | "left" };
-  device?: Rect;
-  deviceSecondary?: Rect;
-  callout?: Rect;
-};
-
-function getDefaultRects(
-  layout: Slide["layout"],
-  cW: number,
-  cH: number,
-  frameAspect: number,
-  fwFrac: number,
-  fwSmallFrac: number,
-  // Phones and tablets are deliberately hung past the canvas edge so they bleed off
-  // it. When true (TV, watch, CarPlay, Mac), every device rect stays fully inside the
-  // canvas instead.
-  contain = false,
-): LayoutRects {
-  const deviceW = fwFrac * cW;
-  const deviceH = deviceW / frameAspect;
-  const smallW = fwSmallFrac * cW;
-  const smallH = smallW / frameAspect;
-  const capW = cW * 0.84;
-  const capH = cH * 0.28;
-
-  switch (layout) {
-    case "hero":
-      return {
-        caption: { x: cW * 0.08, y: cH * 0.09, width: capW, height: capH, align: "center" },
-        device: {
-          x: (cW - deviceW) / 2,
-          y: contain ? cH - deviceH - cH * 0.05 : cH - deviceH + deviceH * 0.15,
-          width: deviceW,
-          height: deviceH,
-        },
-      };
-    case "device-bottom":
-      return {
-        caption: { x: cW * 0.08, y: cH * 0.08, width: capW, height: capH, align: "center" },
-        device: {
-          x: (cW - deviceW) / 2,
-          y: cH - deviceH - cH * 0.02,
-          width: deviceW,
-          height: deviceH,
-        },
-      };
-    case "device-top":
-      return {
-        caption: { x: cW * 0.08, y: cH * 0.65, width: capW, height: capH, align: "center" },
-        device: {
-          x: (cW - deviceW) / 2,
-          y: contain ? cH * 0.05 : -cH * 0.1,
-          width: deviceW,
-          height: deviceH,
-        },
-      };
-    case "two-devices":
-      return {
-        caption: { x: cW * 0.08, y: cH * 0.08, width: capW, height: capH, align: "center" },
-        deviceSecondary: {
-          x: contain ? cW * 0.04 : -cW * 0.06,
-          y: cH - smallH - cH * 0.05,
-          width: smallW,
-          height: smallH,
-        },
-        device: {
-          x: contain ? cW - deviceW * 0.9 - cW * 0.04 : cW - deviceW * 0.9 + cW * 0.06,
-          y: contain ? cH - (deviceW * 0.9) / frameAspect - cH * 0.05 : cH - deviceH * 0.9 - cH * 0.02,
-          width: deviceW * 0.9,
-          height: (deviceW * 0.9) / frameAspect,
-        },
-      };
-    case "no-device":
-      return {
-        caption: {
-          x: cW * 0.1,
-          y: cH * 0.35,
-          width: cW * 0.8,
-          height: cH * 0.3,
-          align: "center",
-        },
-      };
-    case "split-landscape": {
-      // Contained devices sit beside the caption instead of sliding under it.
-      // The caption is beside it, not above, so it can be taller than elsewhere.
-      const splitW = contain ? Math.min(cW * 0.5, cH * 0.84 * frameAspect) : deviceW;
-      const splitH = splitW / frameAspect;
-      return {
-        caption: {
-          x: cW * 0.05,
-          y: cH * 0.25,
-          width: cW * 0.38,
-          height: cH * 0.5,
-          align: "left",
-        },
-        device: {
-          x: contain ? cW - splitW - cW * 0.05 : cW - deviceW + cW * 0.03,
-          y: (cH - splitH) / 2,
-          width: splitW,
-          height: splitH,
-        },
-      };
-    }
-    default:
-      return {};
-  }
-}
-
-// ---------- iPhone Duo placements ----------
-//
-// Duo decks get their own placements, modelled on the first published Duo sets
-// and Apple's guidance (see iphone-duo.md in the skill):
-// - Landscape canvases (inner display opened, outer turned) are about as wide as
-//   an iPad. A short headline runs across the top and the device is the hero,
-//   wide enough that the capture reads, rather than a phone-sized device beside
-//   a narrow column of copy.
-// - "Two devices" becomes "Folded + open": the second device is the same phone in
-//   its other state, drawn in that display's frame. Opening an upright closed
-//   phone gives the inner display in landscape, at the same height, so that pair
-//   is drawn to physical scale side by side.
-// Portrait decks keep the phone placements from getDefaultRects.
-
-/** Width of the companion frame that matches a primary frame `primaryW` wide, to physical scale. */
-function physicalCompanionW(device: DuoDevice, primaryW: number) {
-  const companion = DUO_COMPANION[device];
-  const p = duoGeometry(device);
-  const c = duoGeometry(companion);
-  // Both displays are captured at the same pixel density, so capture pixels scale alike.
-  const canvasPerPixel = (primaryW * p.screen.W) / 100 / CANVAS[device].w;
-  return (canvasPerPixel * CANVAS[companion].w) / (c.screen.W / 100);
-}
-
-function getDuoRects(layout: Slide["layout"], device: DuoDevice, cW: number, cH: number): LayoutRects | null {
-  const fa = duoGeometry(device).aspect;
-  const ca = duoGeometry(DUO_COMPANION[device]).aspect;
-  const landscape = cW > cH;
-  const topCaption = { x: cW * 0.06, y: cH * 0.06, width: cW * 0.88, height: cH * (landscape ? 0.18 : 0.2), align: "center" as const };
-
-  if (layout === "two-devices") {
-    if (landscape) {
-      // Side by side, bottom-aligned: the companion leads on the left.
-      const gap = cW * 0.03;
-      const k = physicalCompanionW(device, 1);
-      // Folded and open heights match for the upright pair; otherwise keep the
-      // taller companion from crowding the headline.
-      const w = Math.min((cW * 0.9 - gap) / (1 + k), cH * 0.66 * fa, (cH * 0.7 * ca) / k);
-      const cw = w * k;
-      const x0 = (cW - (w + gap + cw)) / 2;
-      const bottom = cH * 0.95;
-      return {
-        caption: topCaption,
-        deviceSecondary: { x: x0, y: bottom - cw / ca, width: cw, height: cw / ca },
-        device: { x: x0 + cw + gap, y: bottom - w / fa, width: w, height: w / fa },
-      };
-    }
-    if (device === "duo-outer") {
-      // The opened phone sits behind, upper left; the closed one in front, lower right.
-      const cw = cW * 0.86;
-      const w = Math.min(cW * 0.46, cH * 0.42 * fa);
-      return {
-        caption: topCaption,
-        deviceSecondary: { x: cW * 0.04, y: cH * 0.27, width: cw, height: cw / ca },
-        device: { x: cW - w - cW * 0.05, y: cH * 0.97 - w / fa, width: w, height: w / fa },
-      };
-    }
-    // Inner portrait: the closed phone is short and wide, so the pair stands side
-    // by side, bottom-aligned, with the open display leading in size.
-    const gap = cW * 0.03;
-    const cw = cW * 0.3;
-    const w = cW * 0.62;
-    const x0 = (cW - (cw + gap + w)) / 2;
-    const bottom = cH * 0.95;
-    return {
-      caption: topCaption,
-      deviceSecondary: { x: x0, y: bottom - cw / ca, width: cw, height: cw / ca },
-      device: { x: x0 + cw + gap, y: bottom - w / fa, width: w, height: w / fa },
-    };
-  }
-
-  if (!landscape) return null;
-  switch (layout) {
-    case "hero": {
-      const w = cW * 0.82;
-      return { caption: topCaption, device: { x: (cW - w) / 2, y: cH * 0.31, width: w, height: w / fa } };
-    }
-    case "device-bottom": {
-      const h = cH * 0.64;
-      return { caption: topCaption, device: { x: (cW - h * fa) / 2, y: cH * 0.96 - h, width: h * fa, height: h } };
-    }
-    case "device-top": {
-      const w = cW * 0.82;
-      const h = w / fa;
-      return {
-        caption: { ...topCaption, y: cH * 0.74 },
-        device: { x: (cW - w) / 2, y: cH * 0.69 - h, width: w, height: h },
-      };
-    }
-    case "split-landscape": {
-      const w = Math.min(cW * 0.58, cH * 0.86 * fa);
-      return {
-        caption: { x: cW * 0.05, y: cH * 0.22, width: cW * 0.33, height: cH * 0.56, align: "left" },
-        device: { x: cW - w - cW * 0.04, y: (cH - w / fa) / 2, width: w, height: w / fa },
-      };
-    }
-    default:
-      return null;
-  }
-}
-
-function rectFor(
-  id: BuiltInElementId,
-  slide: Slide,
-  defaults: LayoutRects,
-): (Rect & { align?: "center" | "left" }) | undefined {
-  const saved = slide.transforms?.[id];
-  const def = defaults[id];
-  if (!def && !saved) return undefined;
-  if (!saved) return def;
-  return {
-    x: saved.x,
-    y: saved.y,
-    width: saved.width,
-    height: saved.height,
-    align: (def as { align?: "center" | "left" } | undefined)?.align,
-  };
-}
-
-// Devices whose frame must never be cropped by the canvas edge. A clipped TV,
-// head unit, watch face or Mac window reads as a mistake, not as a deliberate bleed.
-// A landscape phone hanging off the bottom reads as cropped, so Duo landscape
-// targets are contained too.
-const CONTAINED_DEVICES: ReadonlySet<Device> = new Set<Device>([
-  "tvos", "watchos", "carplay", "mac", "duo-outer-landscape", "duo-inner-landscape",
-]);
-
-function getSlideGeometry(slide: Slide, device: Device, orientation: Orientation) {
-  const { cW, cH } = getCanvas(device, orientation);
-  const { Comp: Frame, widthFn, smallWidthFn } = getFrameForDevice(device, orientation);
-  const frameAspect = getFrameAspect(device, orientation);
-  if (isCreative(device)) {
-    // Creatives compose inside Apple's art safe area, as if it were the canvas:
-    // copy and focal device stay clear of every placement's crop while the
-    // backdrop fills the whole asset. Devices are contained, so the focal
-    // screen is never trimmed by a placement either.
-    const { safe } = CREATIVE_SPECS[device];
-    const local = getDefaultRects(
-      slide.layout, safe.w, safe.h, frameAspect, widthFn(safe.w, safe.h), smallWidthFn(safe.w, safe.h), true,
-    );
-    const defaults: LayoutRects = Object.fromEntries(
-      Object.entries(local).map(([id, rect]) => [id, { ...rect, x: rect.x + safe.x, y: rect.y + safe.y }]),
-    );
-    if (slide.callout && defaults.device) defaults.callout = defaultCalloutRect(defaults.device, cW, cH, Math.min(safe.w, safe.h));
-    return { cW, cH, Frame, frameAspect, defaults, typeUnit: Math.min(safe.w, safe.h) * 1.15 };
-  }
-  const fwFrac = widthFn(cW, cH);
-  const fwSmallFrac = smallWidthFn(cW, cH);
-  const duo = isDuoDevice(device) ? getDuoRects(slide.layout, device, cW, cH) : null;
-  const defaults = duo || getDefaultRects(
-    slide.layout, cW, cH, frameAspect, fwFrac, fwSmallFrac,
-    CONTAINED_DEVICES.has(device),
-  );
-  if (slide.callout && defaults.device) defaults.callout = defaultCalloutRect(defaults.device, cW, cH);
-  // Duo landscape copy runs across the top as one line, so it can be a size smaller.
-  const typeUnit = duo && cW > cH ? cH * 0.86 : undefined;
-  return { cW, cH, Frame, frameAspect, defaults, typeUnit };
-}
-
-// The loupe starts overlapping the device's upper right, inside the screen.
-function defaultCalloutRect(device: Rect, cW: number, cH: number, unit = Math.min(cW, cH)): Rect {
-  const size = unit * 0.44;
-  return {
-    x: Math.min(cW - size - cW * 0.04, device.x + device.width * 0.58),
-    y: Math.max(cH * 0.04, Math.min(cH - size * 1.04, device.y + device.height * 0.16)),
-    width: size,
-    height: size,
-  };
-}
-
-// Share of a frame's width taken by its screen. Close enough for every frame
-// that the callout's zoom reads as "× the size it appears on the device".
-export const SCREEN_WIDTH_FRACTION = 0.9;
-
-export function calloutAvailable(slide: Slide, device: Device) {
-  return device !== "feature-graphic" && slide.layout !== "no-device" && slide.layout !== "feature-graphic";
-}
-
-export function getElementTransform(
-  slide: Slide,
-  device: Device,
-  orientation: Orientation,
-  id: ElementId,
-): ElementTransform | undefined {
-  if (id.startsWith("text:")) {
-    const textId = id.slice("text:".length);
-    const textElement = slide.textElements?.find((element) => element.id === textId);
-    return textElement?.transform;
-  }
-  if (isImageElementId(id)) {
-    const imageId = imageElementKey(id);
-    return slide.imageElements?.find((element) => element.id === imageId)?.transform;
-  }
-  const { defaults } = getSlideGeometry(slide, device, orientation);
-  const rect = rectFor(id as BuiltInElementId, slide, defaults);
-  if (!rect) return undefined;
-  const saved = slide.transforms?.[id as BuiltInElementId];
-  return {
-    x: rect.x,
-    y: rect.y,
-    width: rect.width,
-    height: rect.height,
-    rotation: saved?.rotation ?? 0,
-    zIndex: saved?.zIndex ?? defaultElementZ(id as BuiltInElementId),
-  };
-}
-
-function defaultElementZ(id: BuiltInElementId): number {
-  if (id === "deviceSecondary") return 2;
-  if (id === "device") return 3;
-  if (id === "callout") return 5;
-  return 4;
-}
-
 // ---------- Main single-screen canvas ----------
 
 export function SlideCanvas({
@@ -767,10 +312,10 @@ export function SlideCanvas({
   stripIndex = 0,
   stripCount = 1,
 }: Props) {
-  const { cW, cH } = getCanvas(device, orientation);
+  const { cW, cH } = canvasSize(device, orientation);
   const scene = sceneOf(rawScene);
 
-  if (slide.layout === "feature-graphic" || device === "feature-graphic") {
+  if (isFeatureGraphic(slide, device)) {
     return (
       <div style={{ width: "100%", height: "100%", fontFamily }}>
         <FeatureGraphicCanvas
@@ -849,7 +394,7 @@ export function DeckCanvas({
   stripStart = 0,
   stripCount,
 }: DeckCanvasProps) {
-  const { cW, cH } = getCanvas(device, orientation);
+  const { cW, cH } = canvasSize(device, orientation);
   const scene = sceneOf(rawScene);
   const totalW = Math.max(1, slides.length) * cW;
 
@@ -866,7 +411,7 @@ export function DeckCanvas({
       {slides.map((slide, index) => {
         const screenX = index * cW;
         const active = activeSlideId === slide.id;
-        if (slide.layout === "feature-graphic" || device === "feature-graphic") {
+        if (isFeatureGraphic(slide, device)) {
           return (
             <div
               key={`${slide.id}-feature`}
@@ -925,7 +470,7 @@ export function DeckCanvas({
       })}
 
       {slides.map((slide, index) => {
-        if (slide.layout === "feature-graphic" || device === "feature-graphic") return null;
+        if (isFeatureGraphic(slide, device)) return null;
         const selectedElementId =
           selectedElement?.slideId === slide.id ? selectedElement.elementId : null;
         const perSlideEdit: EditHandlers | undefined = editable
@@ -991,7 +536,7 @@ export function DeckCanvas({
 // universal asset may be cropped in each placement.
 function CreativeGuide({ device, cW, cH, left }: { device: Device; cW: number; cH: number; left: number }) {
   if (!isCreative(device)) return null;
-  const { safe, crops } = CREATIVE_SPECS[device];
+  const { safe, crops } = creativeSpec(device);
   const line = Math.max(3, cW * 0.0012);
   const tag = (text: string, color: string, outside = false): React.ReactNode => (
     <span
@@ -1094,7 +639,7 @@ function SlideBackground({
         base={slide.backgroundColor || (inverted ? theme.bgAlt : theme.bg)}
         fg={colors.fg}
         accent={theme.accent}
-        dark={isDark(slide.backgroundColor || (inverted ? theme.bgAlt : theme.bg))}
+        dark={isDarkColor(slide.backgroundColor || (inverted ? theme.bgAlt : theme.bg))}
         inverted={inverted && !slide.backgroundColor}
         blobsInverted={inverted}
       />
@@ -1102,7 +647,6 @@ function SlideBackground({
   );
 }
 
-const isDark = (hex: string) => (relativeLuminance(hex) ?? 1) < 0.18;
 
 function ScreenGuide({
   cW,
@@ -1280,13 +824,14 @@ function SlideElements({
 }) {
   const screenshot = resolveScreenshot(slide.screenshot, locale);
   const screenshotSecondary = resolveScreenshot(slide.screenshotSecondary, locale);
-  const { cW, cH, Frame, frameAspect, defaults, typeUnit } = getSlideGeometry(slide, device, orientation);
+  const { cW, cH, frameAspect, defaults, typeUnit } = getSlideGeometry(slide, device, orientation);
+  const Frame = frameComponent(device, orientation);
   const inverted = !!slide.inverted;
   const colors = slideColors(theme, slide);
   const captionRect = rectFor("caption", slide, defaults);
   const deviceRect = rectFor("device", slide, defaults);
   const secondaryRect = rectFor("deviceSecondary", slide, defaults);
-  const calloutRect = slide.callout && deviceRect && calloutAvailable(slide, device)
+  const calloutRect = slide.callout && deviceRect && showsDevice(slide, device)
     ? rectFor("callout", slide, defaults)
     : undefined;
 
@@ -1302,7 +847,7 @@ function SlideElements({
     if (!captionRect) return null;
     const saved = slide.transforms?.caption;
     const rotation = saved?.rotation ?? 0;
-    const zIndex = saved?.zIndex ?? 4;
+    const zIndex = elementZ(slide, "caption");
     const inner = (
       <Caption
         cW={cW}
@@ -1352,14 +897,14 @@ function SlideElements({
   // On iPhone Duo the back device is the same phone in its other state. Duo
   // frames also ignore the scene's tilt: Apple's marketing guidelines ask for
   // straight-on product images.
-  const companion = isDuoDevice(device) ? DUO_COMPANION[device] : null;
+  const companion = isDuoDevice(device) ? duoCompanion(device) : null;
 
   function renderDevice(id: "device" | "deviceSecondary", rect: Rect, src: string, extraStyle?: React.CSSProperties) {
-    const DeviceFrame = id === "deviceSecondary" && companion ? DUO_FRAMES[companion] : Frame;
+    const DeviceFrame = id === "deviceSecondary" && companion ? frameComponent(companion, orientation) : Frame;
     const aspect = id === "deviceSecondary" && companion ? duoGeometry(companion).aspect : frameAspect;
     const saved = slide.transforms?.[id];
     const rotation = saved?.rotation ?? 0;
-    const zIndex = saved?.zIndex ?? (id === "deviceSecondary" ? 2 : 3);
+    const zIndex = elementZ(slide, id);
     return (
       <Movable
         rect={toGlobal(rect)}
@@ -1399,7 +944,7 @@ function SlideElements({
     const callout = slide.callout!;
     const saved = slide.transforms?.callout;
     const rotation = saved?.rotation ?? 0;
-    const zIndex = saved?.zIndex ?? defaultElementZ("callout");
+    const zIndex = elementZ(slide, "callout");
     return (
       <Movable
         rect={toGlobal(rect)}
@@ -1433,11 +978,11 @@ function SlideElements({
     );
   }
 
-  function renderTextElement(textElement: TextElement, index: number) {
+  function renderTextElement(textElement: TextElement) {
     const elementId = toTextElementId(textElement.id);
     const rect = textElement.transform;
     const rotation = rect.rotation ?? 0;
-    const zIndex = rect.zIndex ?? 5 + index;
+    const zIndex = elementZ(slide, elementId);
     const textColor = textElement.color || colors.fg;
     return (
       <Movable
@@ -1500,11 +1045,11 @@ function SlideElements({
     );
   }
 
-  function renderImageElement(imageElement: ImageElement, index: number) {
+  function renderImageElement(imageElement: ImageElement) {
     const elementId = toImageElementId(imageElement.id);
     const rect = imageElement.transform;
     const rotation = rect.rotation ?? 0;
-    const zIndex = rect.zIndex ?? 5 + index;
+    const zIndex = elementZ(slide, elementId);
     return (
       <Movable
         key={imageElement.id}
@@ -1549,8 +1094,8 @@ function SlideElements({
       {deviceRect && renderDevice("device", deviceRect, screenshot)}
       {renderCaption()}
       {calloutRect && deviceRect && renderCallout(calloutRect, deviceRect.width)}
-      {(slide.imageElements || []).map(renderImageElement)}
-      {(slide.textElements || []).map(renderTextElement)}
+      {(slide.imageElements || []).map((element) => renderImageElement(element))}
+      {(slide.textElements || []).map((element) => renderTextElement(element))}
     </>
   );
 }

@@ -2,7 +2,8 @@
 import * as React from "react";
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CREATIVE_SPECS, DEVICE_LABEL, centredCrop, layoutLabel } from "@/lib/constants";
+import { DEVICES, canvasSize, centredCrop, creativeSpec, isCreative } from "@/lib/devices";
+import { layoutLabel } from "@/lib/layouts";
 import type {
   Device,
   ElementId,
@@ -13,7 +14,7 @@ import type {
   Slide,
   Theme,
 } from "@/lib/types";
-import { DeckCanvas, SlideCanvas, getCanvas } from "./slide-canvas";
+import { DeckCanvas, SlideCanvas } from "./slide-canvas";
 
 type Props = {
   slides: Slide[];
@@ -29,8 +30,8 @@ type Props = {
   scene?: Scene;
   selectedElement: SelectedElement | null;
   onActiveSlideChange: (id: string) => void;
-  onLabelChange: (slide: Slide, v: string) => void;
-  onHeadlineChange: (slide: Slide, v: string) => void;
+  onLabelChange: (slideId: string, v: string) => void;
+  onHeadlineChange: (slideId: string, v: string) => void;
   onTextElementTextChange: (slideId: string, id: string, v: string) => void;
   onElementChange: (slideId: string, id: ElementId, t: ElementTransform) => void;
   onSelectElement: (element: SelectedElement | null) => void;
@@ -63,7 +64,7 @@ export function PreviewStage({
   const suppressNextActiveScreenPanRef = React.useRef(false);
   const [fitScale, setFitScale] = React.useState(0.2);
   const [zoom, setZoom] = React.useState(1);
-  const { cW, cH } = getCanvas(device, orientation);
+  const { cW, cH } = canvasSize(device, orientation);
   const totalW = Math.max(1, slides.length) * cW;
   const scale = fitScale * zoom;
   const activeIndex = Math.max(0, slides.findIndex((slide) => slide.id === activeSlideId));
@@ -156,14 +157,8 @@ export function PreviewStage({
               activeSlideId={activeSlide?.id || null}
               showGuides
               edit={{
-                onLabelChange: (slideId, value) => {
-                  const slide = slides.find((s) => s.id === slideId);
-                  if (slide) onLabelChange(slide, value);
-                },
-                onHeadlineChange: (slideId, value) => {
-                  const slide = slides.find((s) => s.id === slideId);
-                  if (slide) onHeadlineChange(slide, value);
-                },
+                onLabelChange,
+                onHeadlineChange,
                 onTextElementTextChange,
                 onElementChange,
                 onSelectElement,
@@ -175,7 +170,7 @@ export function PreviewStage({
       </div>
 
       <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-1.5 rounded-md bg-background/80 px-2 py-1 text-[11px] text-muted-foreground shadow-sm backdrop-blur">
-        <span className="font-medium text-foreground">{DEVICE_LABEL[device]}</span>
+        <span className="font-medium text-foreground">{DEVICES[device].label}</span>
         {activeSlide && (
           <>
             <span aria-hidden>·</span>
@@ -288,8 +283,8 @@ function PlacementPreviews({
   fontFamily: string;
   scene?: Scene;
 }) {
-  const { cW, cH } = getCanvas(device, orientation);
-  const crops = device === "creative-universal" ? CREATIVE_SPECS[device].crops : [];
+  const { cW, cH } = canvasSize(device, orientation);
+  const crops = isCreative(device) ? creativeSpec(device).crops : [];
   return (
     <div
       aria-label="Placement previews"
