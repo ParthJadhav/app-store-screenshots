@@ -42,6 +42,13 @@ export type RenderedSlide = {
 };
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+/**
+ * Wait two animation frames, so React's render and the browser's layout and
+ * paint of a just-mounted node settle before it is captured. One frame is
+ * occasionally not enough on slower machines.
+ */
+export const waitForPaint = () => nextFrame().then(nextFrame);
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 function loadImage(src: string): Promise<HTMLImageElement> {

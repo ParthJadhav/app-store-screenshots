@@ -5,8 +5,9 @@ import { Check, Dices, Download, FlaskConical, Lock, LockOpen, Shuffle, Star, Tr
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DEVICE_LABEL, SCREENSHOT_FONTS, THEMES, themeById } from "@/lib/constants";
-import { renderSlide } from "@/lib/export-render";
+import { SCREENSHOT_FONTS, THEMES, screenshotFontFamily, themeById } from "@/lib/constants";
+import { DEVICES, canvasSize } from "@/lib/devices";
+import { renderSlide, waitForPaint } from "@/lib/export-render";
 import { BACKDROPS, DECORATIONS } from "@/lib/scene";
 import {
   LOCK_LABEL,
@@ -22,9 +23,9 @@ import {
   type LockKey,
   type Locks,
 } from "@/lib/style-lab";
-import { cn } from "@/lib/utils";
+import { cn, downloadBlob, slugify } from "@/lib/utils";
 import type { Look, ProjectState } from "@/lib/types";
-import { DeckCanvas, getCanvas } from "./slide-canvas";
+import { DeckCanvas } from "./slide-canvas";
 
 type Slot = { direction: string; seed: number };
 
@@ -75,7 +76,7 @@ export function StyleLab({
     [slots, base, locks],
   );
   // Size every deck preview so the whole strip fits the row without scrolling.
-  const { cW, cH } = getCanvas(state.device, state.orientation);
+  const { cW, cH } = canvasSize(state.device, state.orientation);
   const previewH = Math.round(
     Math.max(
       PREVIEW_MIN_H,
@@ -113,8 +114,7 @@ export function StyleLab({
     if (exporting) return;
     setExporting(true);
     try {
-      // Let the board mount and lay out before capturing it.
-      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      await waitForPaint();
       await document.fonts?.ready;
       const el = boardRef.current;
       if (!el) throw new Error("Comparison board did not render");
@@ -122,12 +122,7 @@ export function StyleLab({
       const h = el.offsetHeight;
       const rendered = await renderSlide(el, w, h, "#F4F3EF");
       const png = await rendered.toPng(w, h);
-      const url = URL.createObjectURL(new Blob([png as BlobPart], { type: "image/png" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${slug(state.appName)}-style-lab.png`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      downloadBlob(new Blob([png as BlobPart], { type: "image/png" }), `${slugify(state.appName)}-style-lab.png`);
       toast.success("Comparison image exported");
     } catch (error) {
       toast.error("Couldn't export the comparison", {
@@ -151,7 +146,7 @@ export function StyleLab({
             <FlaskConical className="h-4 w-4" /> Style Lab
           </DialogTitle>
           <DialogDescription>
-            Four complete looks for your {DEVICE_LABEL[state.device]} deck. Lock what you like, shuffle the rest, apply
+            Four complete looks for your {DEVICES[state.device].label} deck. Lock what you like, shuffle the rest, apply
             one. Your screenshots and copy stay as they are.
           </DialogDescription>
         </DialogHeader>
@@ -384,14 +379,11 @@ function LookRow({
   );
 }
 
-function fontFamilyOf(project: ProjectState) {
-  return SCREENSHOT_FONTS[project.fontId || "template-default"].family;
-}
 
 /** A whole deck, scaled to `height`, exactly as the export would render it. */
 function DeckPreview({ project, height }: { project: ProjectState; height: number }) {
   const slides = project.slidesByDevice[project.device] || [];
-  const { cW, cH } = getCanvas(project.device, project.orientation);
+  const { cW, cH } = canvasSize(project.device, project.orientation);
   const scale = height / cH;
   return (
     <div
@@ -408,7 +400,7 @@ function DeckPreview({ project, height }: { project: ProjectState; height: numbe
           locale={project.locale}
           appName={project.appName}
           appIcon={project.appIcon}
-          fontFamily={fontFamilyOf(project)}
+          fontFamily={screenshotFontFamily(project.fontId)}
           connectedCanvas={project.connectedCanvas}
           scene={project.scene}
           hideEmpty
@@ -429,7 +421,7 @@ const ComparisonBoard = React.forwardRef<
   { appName: string; rows: { title: string; project: ProjectState }[] }
 >(function ComparisonBoard({ appName, rows }, ref) {
   const first = rows[0].project;
-  const { cW, cH } = getCanvas(first.device, first.orientation);
+  const { cW, cH } = canvasSize(first.device, first.orientation);
   const count = (first.slidesByDevice[first.device] || []).length;
   // Stay well under Safari's canvas limit for long or landscape decks.
   const rowH = Math.min(BOARD_ROW_H, Math.floor((BOARD_MAX_W - BOARD_PAD * 2) / Math.max(1, count) / (cW / cH)));
@@ -463,7 +455,3 @@ const ComparisonBoard = React.forwardRef<
     </div>
   );
 });
-
-function slug(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "screenshots";
-}
