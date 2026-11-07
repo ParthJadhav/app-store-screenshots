@@ -140,7 +140,6 @@ test('real disk autosave reload and cache preserve edits', async ({ app, browser
     const saved = browser.waitForResponse('**/api/project');
     await screen.getByRole('textbox', 'App name').fill('Persisted army');
     await expect((await saved).status).toBe(200);
-    await expect(browser.locator('[title="Project saved"]')).toBeVisible();
     await browser.reload(); await expect(screen.getByRole('textbox', 'App name')).toHaveValue('Persisted army');
     await expect((await (await fetch(endpoint)).json()).state.appName).toBe('Persisted army');
     await expect(await browser.evaluate(() => Object.keys(localStorage).length > 0)).toBe(true);

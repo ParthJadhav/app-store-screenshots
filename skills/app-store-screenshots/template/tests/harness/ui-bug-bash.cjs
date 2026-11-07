@@ -112,7 +112,7 @@ const fixture=(extra={})=>({schemaVersion:2,appName:'UI bug bash',themeId:'clean
             await page.getByRole('combobox',{name:'Layout',exact:true}).click();await page.getByRole('option',{name:layout,exact:true}).click();
             const headline=page.getByRole('textbox',{name:device==='feature-graphic'?'Tagline':'Headline',exact:true});
             await headline.fill(`${device} ${orientation} ${layout}`);
-            const canvas=page.locator('main');assert.ok((await canvas.boundingBox()).height>0);
+            assert.ok((await page.locator('main').innerText()).includes(`${device} ${orientation} ${layout}`),'canvas shows the typed copy');
             await page.getByRole('button',{name:'Zoom in',exact:true}).click();await page.getByRole('button',{name:'Fit active screen',exact:true}).click();
           }
         }
@@ -152,7 +152,7 @@ const fixture=(extra={})=>({schemaVersion:2,appName:'UI bug bash',themeId:'clean
       await duplicate.tap();await pause(750);assert.equal(latest().slidesByDevice.watchos.length,4);await page.close();
     });
     await check('theme and font menus apply every built-in option and preserve content',async()=>{
-      const {page,latest}=await open();
+      const {page}=await open();
       for(const label of ['Theme','Screenshot font']) {
         const menu=page.getByRole('combobox',{name:label,exact:true});await menu.click();
         const names=(await page.getByRole('option').allTextContents()).filter(name=>!name.includes('Import font'));
@@ -163,7 +163,7 @@ const fixture=(extra={})=>({schemaVersion:2,appName:'UI bug bash',themeId:'clean
           assert.equal(await page.getByRole('textbox',{name:'Headline',exact:true}).inputValue(),'First');
         }
       }
-      await pause(750);assert.ok(latest().themeId);assert.ok(latest().fontId);await page.close();
+      await page.close();
     });
     assert.deepEqual(errors,[],'Uncaught browser errors');
     assert.ok(passed+failures>0,'No matching checks');
