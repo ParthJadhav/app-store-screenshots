@@ -93,14 +93,14 @@ All source paths in this table are relative to `skills/app-store-screenshots/tem
 | --- | --- | --- |
 | App entry / editor orchestration | `src/app/page.tsx`, `src/components/editor/screenshot-editor.tsx` | Deck selection, edits, toolbar wiring, `exportAll`/`generateBundle` |
 | Selection, pan, zoom, Fit | `src/components/editor/preview-stage.tsx` — `PreviewStage`, `panToActiveScreen` | Canvas-origin selection suppresses auto-pan; sidebar-origin selection recenters |
-| Connected/isolated composition, transforms | `src/components/editor/slide-canvas.tsx` | Preview, thumbnails and exported crops must agree |
+| Connected/isolated composition, transforms | `src/components/editor/slide-canvas.tsx`, default placements in `src/lib/layouts.ts` | Preview, thumbnails and exported crops must agree |
 | Inspector fields / overlays | `src/components/editor/inspector.tsx`, `image-element-canvas.tsx` | Editor patches persist in the project state |
-| Hydration, save/retry/conflicts, undo | `src/lib/storage.ts` — `useProject`, `loadFromFile`, `saveToFile` | `/api/project` route and `project-validation.ts` |
+| Hydration, save/retry/conflicts, undo | `src/lib/storage.ts` — `useProject`, `loadFromFile`, `saveToFile` | `/api/project` route and `project-schema.ts` |
 | Export preparation and image/font loading | `src/lib/export-assets.ts`, `image-cache.ts`, `typography.ts` | `screenshot-editor.tsx` coordinates preparation and ZIP construction |
 | Crop/render/blank-image detection | `src/lib/export-render.ts` — `renderSlide` | Connected DOM composition in `slide-canvas.tsx` |
 | RGB PNG encoding / worker fallback | `src/lib/png-rgb.ts`, `png-encode.ts`, `png-worker.ts` | Distinguish rendering failures from encoding failures |
-| Upload validation / serving | `src/app/api/{upload,upload-font}/route.ts` | `request-body.ts`, `request-guard.ts`, `write-asset.ts`, `serve-asset.ts`, runtime serving routes |
-| Device sizes, themes, font choices | `src/lib/constants.ts`, `types.ts` | Starter JSON vs. reset/fallback `defaults.ts` |
+| Upload validation / serving | `src/app/api/{upload,upload-font}/route.ts` | `request-body.ts`, `request-guard.ts`, `uploaded-assets.ts`, `asset-files.ts`, runtime serving routes |
+| Device sizes, frames, themes, font choices | `src/lib/devices.ts`, `frame-assets.ts`, `constants.ts`, `types.ts` | Starter JSON vs. reset/fallback `defaults.ts` |
 | Generation/migration behavior | Repo `skills/app-store-screenshots/SKILL.md` | Style index, `_QUALITY_BAR.md`, selected style, `copy-ideas.md` |
 | Verification, after the new suite lands | `package.json`, `e2e.config.ts`, `docs/testing/e2e.md` | `tests/`, `tests/harness/`, `e2e-army/`; root scripts become wrappers |
 

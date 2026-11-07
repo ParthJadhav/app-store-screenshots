@@ -166,16 +166,19 @@ The toolbar arrows, `⌘Z` / `Ctrl+Z` and `⇧⌘Z` / `Ctrl+Shift+Z` (or `Ctrl+Y
 
 | Where | What |
 |-------|------|
-| `src/lib/constants.ts` | Canvas dimensions, export sizes, frame ratios, themes, screenshot fonts, locales |
+| `src/lib/devices.ts` | Every target: canvas dimensions, export sizes, platform, orientations, creative safe areas |
+| `src/lib/frame-assets.ts` | Frame aspects, how wide each device is placed, and Apple bezel measurement |
+| `src/lib/layouts.ts` | Layout names and default placements of the caption, devices and magnifier |
+| `src/lib/constants.ts` | Themes and screenshot fonts |
 | `app-store-screenshots.json` | Canonical starter project: app name, current device, connected-canvas mode, slide copy, screenshots, and transforms |
 | `src/lib/defaults.ts` | Fallback/reset state used when no project file or local cache exists |
-| `src/components/editor/slide-canvas.tsx` | Add new layouts and connected-canvas element rendering |
+| `src/components/editor/slide-canvas.tsx` | Draws each layout's elements and the connected canvas |
 | `src/components/editor/device-frames.tsx` | Tweak device chrome (bezel radii, camera dots) |
 | `src/app/layout.tsx` | Swap the font (`next/font/google`) |
 
 ## Notes
 
-- `mockup.png` is the iPhone bezel overlay; replacing it requires re-measuring the `PHONE_SCREEN` constants. Apple's own bezels in `public/frames/` are measured automatically and replace the built-in frames (see [iPhone Duo](#iphone-duo), Real bezels).
+- `mockup.png` is the iPhone bezel overlay; replacing it requires re-measuring `PHONE_SCREEN` in `src/lib/frame-assets.ts`. Apple's own bezels in `public/frames/` are measured automatically and replace the built-in frames (see [iPhone Duo](#iphone-duo), Real bezels).
 - Image preloading converts every static path to a base64 data URI before exports run, and export retries paths that were previously missing. `export-render.ts` then waits for those images to paint in the render (see Exporting).
 - Reset via the toolbar's circular arrow icon clears in-memory state and reloads the default screens. To wipe disk state too, delete `app-store-screenshots.json`.
 - **Persistence model** — the canonical state lives in `app-store-screenshots.json` (git-tracked). On load, the editor reads localStorage first, then reconciles with the file; if the file endpoint is unavailable, autosave is blocked so stale cache cannot overwrite disk. File saves are serialized and atomic. Each editor sends the revision it loaded, so a newer save from another tab or an on-disk edit produces a conflict instead of an overwrite. Your unsaved work stays open: export or copy it before reloading. **Retry save** retries transient failures; it does not override conflicts. Leaving with unsaved edits triggers the browser's warning.

@@ -794,7 +794,7 @@ Every Apple TV and Apple Watch size below was read from App Store Connect's own 
 
 ## Project Migration
 
-The current editor saves `schemaVersion: 3` (v3 adds the iPhone Duo and creative decks). The migration recipe above still writes `schemaVersion: 2`, which the editor accepts and upgrades to v3 on its next save, adding the new decks without touching existing ones. Existing projects made by earlier versions of this skill usually have no `schemaVersion` and may still store string `label` / `headline` values. Do not hand-edit those projects unless the JSON is invalid. On load, `src/lib/storage.ts`:
+The current editor saves `schemaVersion: 3` (v3 adds the iPhone Duo and creative decks). The migration recipe above still writes `schemaVersion: 2`, which the editor accepts and upgrades to v3 on its next save, adding the new decks without touching existing ones. Existing projects made by earlier versions of this skill usually have no `schemaVersion` and may still store string `label` / `headline` values. Do not hand-edit those projects unless the JSON is invalid. On load, `src/lib/storage.ts` (through `src/lib/project-schema.ts`):
 
 1. Converts legacy string copy to localized `{ "en": "..." }` objects.
 2. Sanitizes existing element transforms.
@@ -849,10 +849,14 @@ project/
     │   │   └── device-frames.tsx       # Phone, IPad, AppleTV, AppleWatch, CarPlayScreen, MacWindow, Android
     │   └── ui/                         # Minimal ShadCN primitives (button, select, etc.)
     └── lib/
-        ├── constants.ts                # Canvas sizes, export sizes, themes, screenshot fonts, frame ratios
+        ├── constants.ts                # Themes and screenshot fonts
+        ├── devices.ts                  # Every target: canvas size, export sizes, platform, orientations
+        ├── frame-assets.ts             # Frame aspects and sizes, Apple bezel measurement
+        ├── layouts.ts                  # Layout names and default element placements
         ├── defaults.ts                 # Initial slide decks per device
         ├── types.ts                    # Slide / ProjectState / Theme types
         ├── storage.ts                  # useProject() — autosave + undo/redo history
+        ├── project-schema.ts           # Project JSON validation and migration on load
         ├── image-cache.ts              # preloadImages + img() helper
         ├── contrast.ts                 # Readable caption colours on custom backgrounds
         ├── export-render.ts            # Slide → PNG; waits for every screenshot to paint
