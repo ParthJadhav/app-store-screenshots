@@ -19,7 +19,7 @@ function parseHex(hex: string): [number, number, number] | null {
   return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
 }
 
-export function relativeLuminance(hex: string): number | null {
+function relativeLuminance(hex: string): number | null {
   const rgb = parseHex(hex);
   if (!rgb) return null;
   const [r, g, b] = rgb.map((v) => {
@@ -29,7 +29,7 @@ export function relativeLuminance(hex: string): number | null {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-export function contrastRatio(a: string, b: string): number {
+function contrastRatio(a: string, b: string): number {
   const la = relativeLuminance(a);
   const lb = relativeLuminance(b);
   if (la === null || lb === null) return 21;

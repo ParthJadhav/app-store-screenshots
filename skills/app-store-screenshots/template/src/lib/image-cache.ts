@@ -20,13 +20,7 @@ async function fetchAsDataUrl(path: string): Promise<{ data: string; w: number; 
     }
     const resp = await fetch(path, { signal: AbortSignal.timeout(10000) });
     if (!resp.ok) return null;
-    const blob = await resp.blob();
-    const data = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    const data = await readAsDataUrl(await resp.blob());
     // A successful HTTP response may still be an HTML error page or corrupt
     // image. Catch that before export silently substitutes an empty device.
     const image = new Image();
@@ -36,6 +30,15 @@ async function fetchAsDataUrl(path: string): Promise<{ data: string; w: number; 
   } catch {
     return null;
   }
+}
+
+export function readAsDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 export async function preloadImages(

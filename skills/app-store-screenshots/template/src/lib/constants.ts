@@ -1,4 +1,4 @@
-import type { ScreenshotFontId, Theme, ThemeId } from "./types";
+import type { ImportedFont, ScreenshotFontId, Theme, ThemeId } from "./types";
 
 // ---------- Themes ----------
 export const DEFAULT_THEME_ID: ThemeId = "clean-light";
@@ -31,6 +31,11 @@ export const SCREENSHOT_FONTS: Record<ScreenshotFontId, { name: string; family: 
   // Only offered once a font has been imported; the name shown comes from the file.
   "self-hosted": { name: "Imported font", family: `"${IMPORTED_FONT_FAMILY}", sans-serif` },
 };
+
+/** "Imported font" is only a choice once a font file has been imported. */
+export function fontAvailable(fontId: ScreenshotFontId, importedFont: ImportedFont | undefined): boolean {
+  return fontId !== "self-hosted" || !!importedFont;
+}
 
 /** CSS font-family a project's screenshots are set in. */
 export function screenshotFontFamily(fontId: ScreenshotFontId | undefined): string {

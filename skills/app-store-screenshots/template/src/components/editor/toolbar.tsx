@@ -19,12 +19,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { IMPORTED_FONT_FAMILY, SCREENSHOT_FONTS, THEMES, themeById } from "@/lib/constants";
+import { SCREENSHOT_FONTS, THEMES, fontAvailable, screenshotFontFamily, themeById } from "@/lib/constants";
 import {
   DEVICES,
   PLATFORMS,
   deviceForOrientation,
-  isDuoDevice,
+  staysStraight,
   orientationOf,
   platformDevices as devicesOf,
   platformOf,
@@ -95,13 +95,9 @@ export function Toolbar(props: Props) {
   const fontImporter = React.useRef<FontImporterHandle>(null);
   const [importingFont, setImportingFont] = React.useState(false);
   // "Imported font" is only a choice once a file has actually been imported.
-  const fontIds = (Object.keys(SCREENSHOT_FONTS) as ScreenshotFontId[]).filter(
-    (id) => id !== "self-hosted" || !!props.importedFont,
-  );
+  const fontIds = (Object.keys(SCREENSHOT_FONTS) as ScreenshotFontId[]).filter((id) => fontAvailable(id, props.importedFont));
   const fontLabel = (id: ScreenshotFontId) =>
     id === "self-hosted" && props.importedFont?.name ? props.importedFont.name : SCREENSHOT_FONTS[id].name;
-  const fontPreviewFamily = (id: ScreenshotFontId) =>
-    id === "self-hosted" ? `"${IMPORTED_FONT_FAMILY}", sans-serif` : SCREENSHOT_FONTS[id].family;
 
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b bg-card/40 px-4 py-2">
@@ -147,7 +143,7 @@ export function Toolbar(props: Props) {
         <FlaskConical className="h-3.5 w-3.5" />
         Style Lab
       </Button>
-      <ScenePlayground scene={props.scene} theme={activeTheme} disabled={props.busy} straightDevices={isDuoDevice(props.device)} onChange={props.setScene} />
+      <ScenePlayground scene={props.scene} theme={activeTheme} disabled={props.busy} straightDevices={staysStraight(props.device)} onChange={props.setScene} />
 
       <Select value={activeTheme.id} onValueChange={props.setThemeId} disabled={props.busy}>
         <SelectTrigger className="h-8 w-40 text-xs" title="Theme" aria-label="Theme">
@@ -180,7 +176,7 @@ export function Toolbar(props: Props) {
         <SelectContent>
           {fontIds.map((id) => (
             <SelectItem key={id} value={id}>
-              <span style={{ fontFamily: fontPreviewFamily(id) }}>{fontLabel(id)}</span>
+              <span style={{ fontFamily: screenshotFontFamily(id) }}>{fontLabel(id)}</span>
             </SelectItem>
           ))}
           <SelectSeparator />

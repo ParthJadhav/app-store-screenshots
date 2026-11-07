@@ -8,7 +8,7 @@
 // the real bezel. Without a file, iPhone Duo uses a drawn frame whose screen has
 // the exact capture aspect, and every other device keeps its built-in frame.
 // Android and CarPlay never use Apple bezels.
-import { DEVICES, isDuoDevice, type DuoDevice } from "./devices";
+import { DEVICES, duoCompanion, duoDisplay, isDuoDevice, type DuoDevice } from "./devices";
 import type { Device, Orientation } from "./types";
 
 /** File names (without .png) looked for in public/frames/. */
@@ -29,6 +29,9 @@ export type FrameFile = (typeof FRAME_FILES)[number];
 // height tall, so a 16:10 capture (the Mac App Store's own aspect) fills the
 // window without being cropped.
 export const MAC_TITLE_BAR = 0.045;
+
+/** The iPhone frame image; its screen is PHONE_SCREEN. */
+export const MOCKUP_SRC = "/mockup.png";
 
 /** Aspect (w/h) of each built-in frame drawn in device-frames.tsx. */
 export const FRAME_ASPECT = {
@@ -70,9 +73,17 @@ type BuiltInFrame = {
   fit: Fit;
   /** Aspect the fit is computed with, when it isn't the drawn one. */
   sizedAs?: number;
+  /** Image the built-in frame draws, so exports can preload it. */
+  image?: string;
   /** Apple's bezel for this device, and its fit when that differs. */
   bezel?: FrameFile;
   bezelFit?: Fit;
+  /**
+   * Captures fill the screen from the top. Mac captures are 16:10 but MacBook
+   * screens are a little taller, so under Apple's bezel a Mac capture loses a
+   * sliver at the bottom, like the built-in Mac window, instead of letterboxing.
+   */
+  fillFromTop?: boolean;
 };
 
 const PHONE_FIT: Fit = { height: 0.72, clamp: 0.84, smallClamp: 0.66 };
@@ -81,6 +92,7 @@ const PHONE_FIT: Fit = { height: 0.72, clamp: 0.84, smallClamp: 0.66 };
 // fractions are of the safe area, not the canvas. They show an iPhone.
 const CREATIVE_FRAME: BuiltInFrame = {
   aspect: FRAME_ASPECT.iphone,
+  image: MOCKUP_SRC,
   fit: { height: 0.62, clamp: 0.9, smallHeight: 0.5, smallClamp: 0.7 },
   bezel: "iphone-portrait",
 };
@@ -93,7 +105,7 @@ const TABLET_FRAME: Record<Orientation, BuiltInFrame> = {
 };
 
 const BUILT_IN_FRAMES: Record<Exclude<Device, DuoDevice>, BuiltInFrame | Record<Orientation, BuiltInFrame>> = {
-  iphone: { aspect: FRAME_ASPECT.iphone, fit: PHONE_FIT, bezel: "iphone-portrait" },
+  iphone: { aspect: FRAME_ASPECT.iphone, fit: PHONE_FIT, image: MOCKUP_SRC, bezel: "iphone-portrait" },
   ipad: { aspect: FRAME_ASPECT.ipad, fit: { height: 0.72, clamp: 0.75, smallClamp: 0.6 }, bezel: "ipad-portrait" },
   // Clamped low so a 16:9 device clears the 0.28-height caption block on a 16:9 canvas.
   tvos: { aspect: FRAME_ASPECT.tv, fit: { height: 0.72, clamp: 0.58, smallClamp: 0.56 }, bezel: "tv" },
@@ -109,7 +121,7 @@ const BUILT_IN_FRAMES: Record<Exclude<Device, DuoDevice>, BuiltInFrame | Record<
   carplay: { aspect: FRAME_ASPECT.carplay, fit: { height: 0.58, clamp: 0.86, smallClamp: 0.7 } },
   // Contained like the TV: height-bound so the window clears the caption block
   // above or below it on the 16:10 canvas.
-  mac: { aspect: FRAME_ASPECT.mac, fit: { height: 0.58, clamp: 0.86, smallClamp: 0.46 }, bezel: "mac" },
+  mac: { aspect: FRAME_ASPECT.mac, fit: { height: 0.58, clamp: 0.86, smallClamp: 0.46 }, bezel: "mac", fillFromTop: true },
   android: { aspect: FRAME_ASPECT.android, sizedAs: FRAME_ASPECT.iphone, fit: PHONE_FIT },
   "android-7": TABLET_FRAME,
   "android-10": TABLET_FRAME,
@@ -171,6 +183,11 @@ const FIT_TOLERANCE = 0.03;
 // capture from an inner one. Scaled-down captures of the right display pass.
 const DUO_FIT_TOLERANCE = 0.005;
 
+/** Whether captures on `device` are anchored to the top of its screen and cropped rather than letterboxed. */
+export function fillsFromTop(device: Device): boolean {
+  return !isDuoDevice(device) && !!builtInFrame(device, "portrait").fillFromTop;
+}
+
 /** Whether a capture of `size` fills `device`'s screen (`screenAspect`) without letterboxing. */
 export function captureFits(size: { w: number; h: number } | undefined, screenAspect: number, device: Device) {
   const tolerance = isDuoDevice(device) ? DUO_FIT_TOLERANCE : FIT_TOLERANCE;
@@ -226,14 +243,15 @@ export function setFrameAssets(next: Partial<Record<FrameFile, MeasuredFrame>>) 
   measured = { ...next };
 }
 
-/** Bezel image URLs in use, so they can be preloaded for export. */
-export function frameAssetPaths(device?: Device): string[] {
+/** Frame images a deck draws (its bezel, or the built-in frame's image), so they can be preloaded for export. */
+export function frameAssetPaths(device: Device, orientation: Orientation): string[] {
   // A Duo deck also draws its companion display in "Folded + open".
-  const companion = device && DEVICES[device].companion;
-  const devices = device ? (companion ? [device, companion] : [device]) : (Object.keys(DEVICES) as Device[]);
+  const devices = isDuoDevice(device) ? [device, duoCompanion(device)] : [device];
   return devices.flatMap((d) => {
-    const image = bezelGeometry(d)?.image;
-    return image ? [image.src] : [];
+    const bezel = bezelGeometry(d);
+    if (bezel) return bezel.image ? [bezel.image.src] : [];
+    const image = isDuoDevice(d) ? undefined : builtInFrame(d, orientation).image;
+    return image ? [image] : [];
   });
 }
 
@@ -250,7 +268,7 @@ export function bezelGeometry(device: Device): FrameGeometry | null {
 
 export function duoGeometry(device: DuoDevice): FrameGeometry {
   const { file, rotateFrom } = DUO_SOURCES[device];
-  const inner = device.startsWith("duo-inner");
+  const inner = duoDisplay(device) === "inner";
   const camera = inner ? "none" : "corner";
   const direct = measured[file];
   if (direct) return fromMeasured(direct, false, camera);

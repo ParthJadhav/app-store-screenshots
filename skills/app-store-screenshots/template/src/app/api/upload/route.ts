@@ -3,7 +3,7 @@ import sharp from "sharp";
 import { saveAsset } from "@/lib/asset-files";
 import { rejectCrossSiteWrite, sniffImageType } from "@/lib/request-guard";
 import { decodeBase64, readJsonBody } from "@/lib/request-body";
-import { UPLOADED_ASSETS } from "@/lib/uploaded-assets";
+import { UPLOADED_ASSETS, UPLOAD_ERRORS, maxRequestBytes } from "@/lib/uploaded-assets";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   if (blocked) {
     return NextResponse.json({ ok: false, error: blocked.error }, { status: blocked.status });
   }
-  const input = await readJsonBody(req, 12 * 1024 * 1024);
+  const input = await readJsonBody(req, maxRequestBytes("image"));
   if (input.response) return input.response;
   const body = input.value as { dataUrl?: string } | null;
   if (!body?.dataUrl || typeof body.dataUrl !== "string") {
@@ -54,14 +54,14 @@ export async function POST(req: Request) {
     );
   }
   if (parsed.bytes.byteLength > maxBytes) {
-    return NextResponse.json({ ok: false, error: "Image too large (>8MB)" }, { status: 413 });
+    return NextResponse.json({ ok: false, error: UPLOAD_ERRORS.imageTooLarge }, { status: 413 });
   }
 
   try {
     // Decode pixels too: valid headers alone still accept truncated images.
     await sharp(parsed.bytes, { limitInputPixels: maxPixels, failOn: "warning" }).stats();
   } catch {
-    return NextResponse.json({ ok: false, error: "Image is corrupt or exceeds 64 megapixels" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: UPLOAD_ERRORS.imageCorrupt }, { status: 400 });
   }
 
   try {

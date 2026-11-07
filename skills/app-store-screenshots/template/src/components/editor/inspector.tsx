@@ -37,7 +37,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { DEVICES, canvasSize, deviceForOrientation, duoCompanion, isCreative, isDuoDevice, orientationOf } from "@/lib/devices";
 import { captureFits, duoGeometry } from "@/lib/frame-assets";
-import { ALL_LAYOUTS, elementZ, getElementTransform, isFeatureGraphic as isBanner, layoutHint, layoutLabel, showsDevice } from "@/lib/layouts";
+import { elementRects, elementZ, getElementTransform, selectableLayouts, isFeatureGraphic as isBanner, layoutHint, layoutLabel, showsDevice } from "@/lib/layouts";
 import { COPY_IDEA_SLOTS } from "@/lib/copy-ideas";
 import { nid } from "@/lib/defaults";
 import { img, imgSize } from "@/lib/image-cache";
@@ -116,9 +116,7 @@ export function Inspector({
 }: Props) {
   const isFeatureGraphic = isBanner(slide, device);
   const layoutValue = device === "feature-graphic" ? "feature-graphic" : slide.layout;
-  const layoutOptions = ALL_LAYOUTS
-    .filter((layout) => (device === "feature-graphic" ? layout === "feature-graphic" : layout !== "feature-graphic"))
-    .map((layout) => [layout, layoutLabel(layout, device)] as const);
+  const layoutOptions = selectableLayouts(device).map((layout) => [layout, layoutLabel(layout, device)] as const);
   // On iPhone Duo the back device is the other display, so it needs its own capture.
   const companion = isDuoDevice(device) ? duoCompanion(device) : null;
   const localeLabel = slide.label?.[locale] ?? "";
@@ -364,10 +362,7 @@ function ElementTransformControls({
   onUpdate: (update: (slide: Slide) => Partial<Slide>) => void;
   onSelectElement: (id: ElementId | null) => void;
 }) {
-  const present: ElementId[] = ["caption"];
-  if (slide.layout !== "no-device") present.push("device");
-  if (slide.layout === "two-devices") present.push("deviceSecondary");
-  if (slide.callout && showsDevice(slide, device)) present.push("callout");
+  const present: ElementId[] = Object.keys(elementRects(slide, device, orientation)) as BuiltInElementId[];
   for (const element of slide.textElements || []) present.push(toTextElementId(element.id));
   for (const element of slide.imageElements || []) present.push(toImageElementId(element.id));
 

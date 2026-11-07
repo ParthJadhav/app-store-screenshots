@@ -2,9 +2,9 @@
 import * as React from "react";
 import { Image as ImageIcon, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { didFail, img, setImage } from "@/lib/image-cache";
+import { didFail, img, readAsDataUrl, setImage } from "@/lib/image-cache";
 import { resolveScreenshot } from "@/lib/locale";
-import { UPLOADED_ASSETS, readFileAsDataUrl } from "@/lib/uploaded-assets";
+import { UPLOADED_ASSETS, UPLOAD_ERRORS } from "@/lib/uploaded-assets";
 
 type Props = {
   label: string;
@@ -58,12 +58,12 @@ export function ScreenshotPicker({ label, value, locale, onChange }: Props) {
       return;
     }
     if (file.size > maxBytes) {
-      setError("Image too large (>8MB)");
+      setError(UPLOAD_ERRORS.imageTooLarge);
       return;
     }
     let dataUrl: string;
     try {
-      dataUrl = await readFileAsDataUrl(file);
+      dataUrl = await readAsDataUrl(file);
     } catch {
       if (request === requestId.current) setError("Failed to read file");
       return;
@@ -77,7 +77,7 @@ export function ScreenshotPicker({ label, value, locale, onChange }: Props) {
       if (image.naturalWidth * image.naturalHeight > maxPixels) throw new Error("too large");
       size = { w: image.naturalWidth, h: image.naturalHeight };
     } catch {
-      if (request === requestId.current) setError("Image is corrupt or exceeds 64 megapixels");
+      if (request === requestId.current) setError(UPLOAD_ERRORS.imageCorrupt);
       return;
     }
     if (request !== requestId.current) return;

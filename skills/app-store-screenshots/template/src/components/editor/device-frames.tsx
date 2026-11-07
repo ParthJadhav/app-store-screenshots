@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { type DuoDevice } from "@/lib/devices";
-import { FRAME_ASPECT, MAC_TITLE_BAR, PHONE_SCREEN, bezelGeometry, captureFits } from "@/lib/frame-assets";
+import { FRAME_ASPECT, MAC_TITLE_BAR, MOCKUP_SRC, PHONE_SCREEN, bezelGeometry, captureFits, fillsFromTop } from "@/lib/frame-assets";
 import type { Device, Orientation } from "@/lib/types";
 import { img, imgSize } from "@/lib/image-cache";
 
@@ -12,7 +12,7 @@ type FrameProps = {
   hideEmpty?: boolean;
 };
 
-export type FrameComponent = React.ComponentType<FrameProps>;
+type FrameComponent = React.ComponentType<FrameProps>;
 
 // iPhone — uses pre-measured mockup.png overlay
 function Phone({ src, style, hideEmpty }: FrameProps) {
@@ -22,7 +22,7 @@ function Phone({ src, style, hideEmpty }: FrameProps) {
       {/* The screen layer covers the bezel's centre, so the exporter checks the
           whole mockup (its visible bezel) rather than its hidden middle. */}
       <img
-        src={img("/mockup.png")}
+        src={img(MOCKUP_SRC)}
         alt=""
         data-export-check="full"
         style={{ display: "block", width: "100%", height: "100%" }}
@@ -407,8 +407,8 @@ function BezelFrame({ device, src, style, hideEmpty }: FrameProps & { device: De
                 display: "block",
                 width: "100%",
                 height: "100%",
-                objectFit: device === "mac" || captureFits(imgSize(src), g.screenAspect, device) ? "cover" : "contain",
-                objectPosition: device === "mac" ? "top" : "center",
+                objectFit: fillsFromTop(device) || captureFits(imgSize(src), g.screenAspect, device) ? "cover" : "contain",
+                objectPosition: fillsFromTop(device) ? "top" : "center",
               }}
               draggable={false}
             />

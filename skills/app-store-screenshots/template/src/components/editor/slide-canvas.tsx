@@ -20,15 +20,14 @@ import { pickText, resolveScreenshot } from "@/lib/locale";
 import { isDarkColor, slideColors } from "@/lib/contrast";
 import { defaultTextElementFontSize, slideFontScales } from "@/lib/typography";
 import { sceneOf } from "@/lib/scene";
-import { canvasSize, centredCrop, creativeSpec, duoCompanion, isCreative, isDuoDevice } from "@/lib/devices";
+import { canvasSize, centredCrop, creativeSpec, duoCompanion, isCreative, isDuoDevice, staysStraight } from "@/lib/devices";
 import { duoGeometry } from "@/lib/frame-assets";
 import {
   SCREEN_WIDTH_FRACTION,
   elementZ,
   getSlideGeometry,
   isFeatureGraphic,
-  rectFor,
-  showsDevice,
+  elementRects,
   type Rect,
 } from "@/lib/layouts";
 import { frameComponent } from "./device-frames";
@@ -824,16 +823,16 @@ function SlideElements({
 }) {
   const screenshot = resolveScreenshot(slide.screenshot, locale);
   const screenshotSecondary = resolveScreenshot(slide.screenshotSecondary, locale);
-  const { cW, cH, frameAspect, defaults, typeUnit } = getSlideGeometry(slide, device, orientation);
+  const { cW, cH, frameAspect, typeUnit } = getSlideGeometry(slide, device, orientation);
   const Frame = frameComponent(device, orientation);
   const inverted = !!slide.inverted;
   const colors = slideColors(theme, slide);
-  const captionRect = rectFor("caption", slide, defaults);
-  const deviceRect = rectFor("device", slide, defaults);
-  const secondaryRect = rectFor("deviceSecondary", slide, defaults);
-  const calloutRect = slide.callout && deviceRect && showsDevice(slide, device)
-    ? rectFor("callout", slide, defaults)
-    : undefined;
+  const {
+    caption: captionRect,
+    device: deviceRect,
+    deviceSecondary: secondaryRect,
+    callout: calloutRect,
+  } = elementRects(slide, device, orientation);
 
   function toGlobal(rect: Rect): Rect {
     return { ...rect, x: rect.x + screenX };
@@ -929,7 +928,7 @@ function SlideElements({
         selected={selectedElementId === id}
         onSelect={() => edit?.onSelectElement?.(id)}
       >
-        <DeviceDepth scene={companion ? { ...scene, tilt: 0 } : scene} cW={cW} accent={theme.accent}>
+        <DeviceDepth scene={staysStraight(device) ? { ...scene, tilt: 0 } : scene} cW={cW} accent={theme.accent}>
           <DeviceFrame
             src={src}
             hideEmpty={hideEmpty}

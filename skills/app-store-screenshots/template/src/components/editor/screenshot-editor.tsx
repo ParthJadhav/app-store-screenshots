@@ -4,7 +4,7 @@ import JSZip from "jszip";
 import { Toaster, toast } from "sonner";
 import { DEFAULT_SCREENSHOT_FONT_ID, IMPORTED_FONT_FAMILY, hasTheme, screenshotFontFamily, themeById } from "@/lib/constants";
 import { copySlide, updateDeck, updateSlide as updateSlideIn, withElementTransform } from "@/lib/deck";
-import { canvasSize, deviceForOrientation, getExportSizes, orientationOf, platformOf, supportsLandscape } from "@/lib/devices";
+import { canvasSize, deviceForOrientation, getExportSizes, platformOf, validOrientation } from "@/lib/devices";
 import { renderSlide, waitForPaint } from "@/lib/export-render";
 import { deckAssetPaths, preloadPaths, screenshotIssues } from "@/lib/export-assets";
 import { setFrameAssets, type FrameFile, type MeasuredFrame } from "@/lib/frame-assets";
@@ -63,7 +63,7 @@ export function ScreenshotEditor() {
 
   React.useEffect(() => {
     // Undo can restore a device whose orientation differs from the current one.
-    const expected = supportsLandscape(state.device) ? orientationOf(state.device, state.orientation) : "portrait";
+    const expected = validOrientation(state.device, state.orientation);
     if (state.orientation !== expected) {
       setState((p) => ({ ...p, orientation: expected }), { history: false });
     }
@@ -505,7 +505,7 @@ export function ScreenshotEditor() {
         setLocale={(v) => setState((p) => ({ ...p, locale: v }), { history: false })}
         locales={state.locales}
         device={state.device}
-        setDevice={(v) => setState((p) => ({ ...p, device: v, orientation: orientationOf(v, p.orientation) }), { history: false })}
+        setDevice={(v) => setState((p) => ({ ...p, device: v, orientation: validOrientation(v, p.orientation) }), { history: false })}
         orientation={state.orientation}
         // A Duo orientation is its own deck: switching opens it rather than
         // re-laying out the current one, so both compositions survive.
@@ -742,8 +742,9 @@ function useFrameAssets() {
             duration: 12000,
           });
         }
-      } catch {
+      } catch (error) {
         // No frames route (e.g. a static build): the drawn frames still work.
+        console.warn("Device bezels unavailable; using drawn frames.", error);
       }
       if (!cancelled) setLoaded(true);
     })();

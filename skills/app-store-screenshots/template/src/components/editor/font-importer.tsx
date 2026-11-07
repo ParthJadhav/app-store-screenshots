@@ -1,7 +1,8 @@
 "use client";
 import * as React from "react";
 import { toast } from "sonner";
-import { UPLOADED_ASSETS, cleanFontName, readFileAsDataUrl } from "@/lib/uploaded-assets";
+import { readAsDataUrl } from "@/lib/image-cache";
+import { UPLOADED_ASSETS, UPLOAD_ERRORS, cleanFontName } from "@/lib/uploaded-assets";
 import type { ImportedFont } from "@/lib/types";
 
 export type FontImporterHandle = { open: () => void };
@@ -12,7 +13,7 @@ type Props = {
 };
 
 async function fileToBase64(file: File): Promise<string> {
-  const dataUrl = await readFileAsDataUrl(file);
+  const dataUrl = await readAsDataUrl(file);
   return dataUrl.slice(dataUrl.indexOf(",") + 1);
 }
 
@@ -32,7 +33,7 @@ export const FontImporter = React.forwardRef<FontImporterHandle, Props>(function
     const request = ++requestId.current;
     onUploadingChange?.(true);
     try {
-      if (file.size > UPLOADED_ASSETS.font.maxBytes) throw new Error("Font file is too large (16MB maximum).");
+      if (file.size > UPLOADED_ASSETS.font.maxBytes) throw new Error(UPLOAD_ERRORS.fontTooLarge);
       await new FontFace("Import validation", await file.arrayBuffer()).load();
       if (request !== requestId.current) return;
       const response = await fetch("/api/upload-font", {

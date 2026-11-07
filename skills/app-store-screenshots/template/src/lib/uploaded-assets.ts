@@ -22,6 +22,18 @@ export const UPLOADED_ASSETS = {
 
 export type AssetKind = keyof typeof UPLOADED_ASSETS;
 
+/** Largest JSON request an upload of `kind` can need: its base64 payload plus room for the envelope. */
+export function maxRequestBytes(kind: AssetKind) {
+  return Math.ceil(UPLOADED_ASSETS[kind].maxBytes / 3) * 4 + MB;
+}
+
+/** Messages shown by both the pickers and the upload routes. */
+export const UPLOAD_ERRORS = {
+  imageTooLarge: `Image too large (>${UPLOADED_ASSETS.image.maxBytes / MB}MB)`,
+  imageCorrupt: `Image is corrupt or exceeds ${UPLOADED_ASSETS.image.maxPixels / MB} megapixels`,
+  fontTooLarge: `Font file is too large (${UPLOADED_ASSETS.font.maxBytes / MB}MB maximum).`,
+};
+
 /** File extension stored for each font format. */
 export const FONT_EXTENSION: Record<ImportedFont["format"], string> = {
   woff2: "woff2",
@@ -56,13 +68,4 @@ export function cleanImportedFont(value: unknown): ImportedFont | undefined {
   if (!font.format || !Object.hasOwn(FONT_EXTENSION, font.format)) return undefined;
   const name = cleanFontName(font.name);
   return { src: font.src, format: font.format, ...(name ? { name } : {}) };
-}
-
-export function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }

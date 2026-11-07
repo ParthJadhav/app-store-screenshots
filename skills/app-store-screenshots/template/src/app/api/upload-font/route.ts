@@ -3,7 +3,7 @@ import { saveAsset } from "@/lib/asset-files";
 import { rejectCrossSiteWrite } from "@/lib/request-guard";
 import type { ImportedFont } from "@/lib/types";
 import { decodeBase64, readJsonBody } from "@/lib/request-body";
-import { FONT_EXTENSION, UPLOADED_ASSETS } from "@/lib/uploaded-assets";
+import { FONT_EXTENSION, UPLOADED_ASSETS, UPLOAD_ERRORS, maxRequestBytes } from "@/lib/uploaded-assets";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   if (blocked) {
     return NextResponse.json({ ok: false, error: blocked.error }, { status: blocked.status });
   }
-  const input = await readJsonBody(req, 23 * 1024 * 1024);
+  const input = await readJsonBody(req, maxRequestBytes("font"));
   if (input.response) return input.response;
   const body = input.value as { data?: unknown } | null;
   if (typeof body?.data !== "string" || !body.data) {
@@ -64,12 +64,12 @@ export async function POST(req: Request) {
   }
   // Reject oversized payloads before decoding (base64 is ~4/3 of the byte size).
   if (body.data.length > Math.ceil(MAX_FONT_BYTES / 3) * 4) {
-    return NextResponse.json({ ok: false, error: "Font file is too large (16MB maximum)." }, { status: 413 });
+    return NextResponse.json({ ok: false, error: UPLOAD_ERRORS.fontTooLarge }, { status: 413 });
   }
   const bytes = decodeBase64(body.data);
   if (!bytes) return NextResponse.json({ ok: false, error: "Invalid base64 font data" }, { status: 400 });
   if (bytes.byteLength > MAX_FONT_BYTES) {
-    return NextResponse.json({ ok: false, error: "Font file is too large (16MB maximum)." }, { status: 413 });
+    return NextResponse.json({ ok: false, error: UPLOAD_ERRORS.fontTooLarge }, { status: 413 });
   }
   const format = sniffFontFormat(bytes);
   if (!format || !hasFontStructure(bytes, format)) {

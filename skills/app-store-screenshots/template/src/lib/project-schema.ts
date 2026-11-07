@@ -3,17 +3,17 @@
 // older or hand-edited project is brought up to the current schema on load.
 // Older projects stay visually stable until they explicitly opt into
 // connected canvas.
-import { DEFAULT_SCREENSHOT_FONT_ID, PROJECT_SCHEMA_VERSION, SCREENSHOT_FONTS } from "./constants";
+import { DEFAULT_SCREENSHOT_FONT_ID, PROJECT_SCHEMA_VERSION, SCREENSHOT_FONTS, fontAvailable } from "./constants";
 import { cleanHexColor } from "./clean-hex-color";
 import { DEFAULT_PROJECT } from "./defaults";
-import { isDevice, orientationOf } from "./devices";
+import { isDevice, validOrientation } from "./devices";
 import { isBuiltInElementId } from "./elements";
 import { isLayout } from "./layouts";
 import { coerceLocalized } from "./locale";
 import { cleanCallout, cleanLook, cleanScene } from "./scene";
 import { cleanTypography } from "./typography";
 import { cleanImportedFont } from "./uploaded-assets";
-import type { ElementTransform, ImageElement, Look, ProjectState, ScreenshotFontId, Slide, TextElement } from "./types";
+import type { ElementTransform, ImageElement, ImportedFont, Look, ProjectState, ScreenshotFontId, Slide, TextElement } from "./types";
 import { isRecord as record } from "./utils";
 
 const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
@@ -159,13 +159,11 @@ function cleanImageElement(value: unknown): ImageElement | undefined {
 // Early builds had a "Classic Serif" that rendered exactly like Georgia.
 const LEGACY_FONT_IDS: Record<string, ScreenshotFontId> = { "classic-serif": "template-serif" };
 
-function cleanFontId(value: unknown, hasImportedFont: boolean): ScreenshotFontId {
+function cleanFontId(value: unknown, importedFont: ImportedFont | undefined): ScreenshotFontId {
   if (typeof value !== "string") return DEFAULT_SCREENSHOT_FONT_ID;
   const id = LEGACY_FONT_IDS[value] ?? value;
-  if (!Object.prototype.hasOwnProperty.call(SCREENSHOT_FONTS, id)) return DEFAULT_SCREENSHOT_FONT_ID;
-  // "Imported font" without a file behind it would render the fallback.
-  if (id === "self-hosted" && !hasImportedFont) return DEFAULT_SCREENSHOT_FONT_ID;
-  return id as ScreenshotFontId;
+  if (!Object.hasOwn(SCREENSHOT_FONTS, id)) return DEFAULT_SCREENSHOT_FONT_ID;
+  return fontAvailable(id as ScreenshotFontId, importedFont) ? (id as ScreenshotFontId) : DEFAULT_SCREENSHOT_FONT_ID;
 }
 
 // Migrate older projects into the current schema while keeping legacy decks
@@ -217,7 +215,7 @@ export function normalizeProject(parsed: Partial<ProjectState>): ProjectState {
   const savedLooks = Array.isArray(parsed.savedLooks)
     ? parsed.savedLooks.map(cleanLook).filter((look): look is Look => !!look)
     : [];
-  const fontId = cleanFontId(parsed.fontId, !!importedFont);
+  const fontId = cleanFontId(parsed.fontId, importedFont);
   const slidesByDevice = parsed.slidesByDevice
     ? Object.fromEntries(
         Object.entries(parsed.slidesByDevice).map(([device, slides]) => [
@@ -250,8 +248,8 @@ export function normalizeProject(parsed: Partial<ProjectState>): ProjectState {
       ...slidesByDevice,
     } as ProjectState["slidesByDevice"],
   };
-  // Duo decks are fixed to one orientation each; keep the project's in step.
-  merged.orientation = orientationOf(merged.device, merged.orientation);
+  // Duo decks are fixed to one orientation each, and portrait-only decks to portrait.
+  merged.orientation = validOrientation(merged.device, merged.orientation);
   // Clamp the active locale into the project's locale list so a stale
   // `locale` (e.g. from a project that dropped languages) doesn't show blank.
   if (!merged.locales || merged.locales.length === 0) {

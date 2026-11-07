@@ -1,4 +1,4 @@
-import { DEVICES, canvasSize, creativeSpec, duoCompanion, isCreative, isDuoDevice, type DuoDevice } from "./devices";
+import { DEVICES, canvasSize, creativeSpec, duoCompanion, duoDisplay, isCreative, isDuoDevice, type DuoDevice } from "./devices";
 import { imageElementKey, isImageElementId, isTextElementId, textElementKey } from "./elements";
 import { duoGeometry, frameLayout } from "./frame-assets";
 import type { BuiltInElementId, Device, ElementId, ElementTransform, Orientation, Slide, SlideLayout } from "./types";
@@ -6,7 +6,7 @@ import type { BuiltInElementId, Device, ElementId, ElementTransform, Orientation
 // Layouts the editor renders, with their name and a short description. Vary
 // them across a deck for visual rhythm. Elements are drawn in slide-canvas.tsx;
 // their default placements are below.
-export const LAYOUTS: Record<SlideLayout, { label: string; hint: string }> = {
+const LAYOUTS: Record<SlideLayout, { label: string; hint: string }> = {
   hero: { label: "Hero", hint: "Headline above, device at bottom" },
   "device-bottom": { label: "Device bottom", hint: "Headline top, device anchored below" },
   "device-top": { label: "Device top", hint: "Flipped — device on top" },
@@ -16,7 +16,7 @@ export const LAYOUTS: Record<SlideLayout, { label: string; hint: string }> = {
   "feature-graphic": { label: "Feature graphic", hint: "1024×500 Play Store banner" },
 };
 
-export const ALL_LAYOUTS = Object.keys(LAYOUTS) as SlideLayout[];
+const ALL_LAYOUTS = Object.keys(LAYOUTS) as SlideLayout[];
 
 export function isLayout(value: unknown): value is SlideLayout {
   return typeof value === "string" && Object.hasOwn(LAYOUTS, value);
@@ -24,6 +24,11 @@ export function isLayout(value: unknown): value is SlideLayout {
 
 // On iPhone Duo the second device is the same phone in its other state.
 const DUO_PAIR = { label: "Folded + open", hint: "The same phone closed and opened, side by side" };
+
+/** Layouts offered for a screen on `device`: the Play banner has its own, every other deck has the rest. */
+export function selectableLayouts(device: Device): SlideLayout[] {
+  return ALL_LAYOUTS.filter((layout) => (layout === "feature-graphic") === (device === "feature-graphic"));
+}
 
 /** Layout name for a device's deck. */
 export function layoutLabel(layout: SlideLayout, device: Device): string {
@@ -36,7 +41,7 @@ export function layoutHint(layout: SlideLayout, device: Device): string {
 }
 
 export type Rect = { x: number; y: number; width: number; height: number };
-export type LayoutRects = {
+type LayoutRects = {
   caption?: Rect & { align?: "center" | "left" };
   device?: Rect;
   deviceSecondary?: Rect;
@@ -193,7 +198,7 @@ function getDuoRects(layout: SlideLayout, device: DuoDevice, cW: number, cH: num
         device: { x: x0 + cw + gap, y: bottom - w / fa, width: w, height: w / fa },
       };
     }
-    if (device === "duo-outer") {
+    if (duoDisplay(device) === "outer") {
       // The opened phone sits behind, upper left; the closed one in front, lower right.
       const cw = cW * 0.86;
       const w = Math.min(cW * 0.46, cH * 0.42 * fa);
@@ -247,7 +252,7 @@ function getDuoRects(layout: SlideLayout, device: DuoDevice, cW: number, cH: num
   }
 }
 
-export function rectFor(
+function rectFor(
   id: BuiltInElementId,
   slide: Slide,
   defaults: LayoutRects,
@@ -322,6 +327,26 @@ export function showsDevice(slide: Slide, device: Device) {
   return !isFeatureGraphic(slide, device) && slide.layout !== "no-device";
 }
 
+/**
+ * The built-in elements a screen draws and where: the layout's defaults plus
+ * any element the user placed (a moved device stays on a "No device" screen).
+ * The magnifier needs a device to magnify.
+ */
+export function elementRects(slide: Slide, device: Device, orientation: Orientation): Partial<Record<BuiltInElementId, Rect & { align?: "center" | "left" }>> {
+  if (isFeatureGraphic(slide, device)) return {};
+  const { defaults } = getSlideGeometry(slide, device, orientation);
+  const rects: Partial<Record<BuiltInElementId, Rect & { align?: "center" | "left" }>> = {};
+  for (const id of ["caption", "device", "deviceSecondary"] as const) {
+    const rect = rectFor(id, slide, defaults);
+    if (rect) rects[id] = rect;
+  }
+  if (slide.callout && rects.device && showsDevice(slide, device)) {
+    const rect = rectFor("callout", slide, defaults);
+    if (rect) rects.callout = rect;
+  }
+  return rects;
+}
+
 /** Where an element is drawn: its saved transform, or its layout default. */
 export function getElementTransform(
   slide: Slide,
@@ -352,7 +377,7 @@ export function getElementTransform(
 }
 
 /** Stacking order: back device, front device, caption, then magnifier and added elements in list order. */
-export function defaultElementZ(id: BuiltInElementId): number {
+function defaultElementZ(id: BuiltInElementId): number {
   if (id === "deviceSecondary") return 2;
   if (id === "device") return 3;
   if (id === "callout") return 5;

@@ -2,7 +2,7 @@
 // and scene), keeps locked parts from the current deck, and applies a look as
 // one undoable edit. Generation is seeded, so the same seed always produces
 // the same four looks.
-import { SCREENSHOT_FONTS, THEMES } from "./constants";
+import { SCREENSHOT_FONTS, THEMES, fontAvailable } from "./constants";
 import { DEVICES } from "./devices";
 import { DEFAULT_SCENE, sameScene, sceneOf } from "./scene";
 import type { Device, Look, ProjectState, Scene, ScreenshotFontId, Slide, SlideLayout } from "./types";
@@ -211,7 +211,7 @@ export const DIRECTIONS: Direction[] = [
 ];
 
 /** The four directions a fresh Style Lab opens with: clearly different from each other. */
-export const STARTER_DIRECTIONS = ["editorial", "playful", "cinematic", "minimal"];
+const STARTER_DIRECTIONS = ["editorial", "playful", "cinematic", "minimal"];
 
 export function directionName(id: string) {
   return DIRECTIONS.find((d) => d.id === id)?.name ?? "Custom";
@@ -309,13 +309,13 @@ function restyleSlide(slide: Slide, index: number, look: Look, locks: Locks, rea
 }
 
 /** The project with `look` applied to the open deck. Locked parts stay as they are. */
-export function applyLook(state: ProjectState, look: Look, locks: Locks = NO_LOCKS): ProjectState {
+export function applyLook(state: ProjectState, look: Look, locks: Locks): ProjectState {
   const slides = state.slidesByDevice[state.device] || [];
   const rearrange = canRearrange(state.device, state.orientation);
   const base = currentLook(state);
   const merged = withLocks(look, base, locks);
   // An imported font only exists on the machine that imported it.
-  const fontId = merged.fontId === "self-hosted" && !state.importedFont ? state.fontId : merged.fontId;
+  const fontId = fontAvailable(merged.fontId, state.importedFont) ? merged.fontId : state.fontId;
   const scene = merged.scene;
   return {
     ...state,

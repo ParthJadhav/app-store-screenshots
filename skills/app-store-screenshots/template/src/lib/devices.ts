@@ -18,8 +18,8 @@ type DeviceSpec = {
   landscape?: { canvas: Size; exportSizes: ExportSize[] };
   /** Each orientation is its own deck (and device), so turning never rewrites a composed placement. */
   orientations?: Record<Orientation, Device>;
-  /** The iPhone Duo display drawn beside this one in "Folded + open". */
-  companion?: DuoDevice;
+  /** iPhone Duo: which display this is, and the display drawn beside it in "Folded + open". */
+  duo?: { display: "outer" | "inner"; companion: DuoDevice };
   creative?: { safe: Box; crops: { label: string; aspect: number }[] };
   /** Layout a newly added screen starts with. */
   newSlideLayout: SlideLayout;
@@ -81,7 +81,7 @@ export const DEVICES: Record<Device, DeviceSpec> = {
     label: "iPhone Duo outer", platform: "ios", canvas: { w: 1398, h: 2034 },
     exportSizes: [{ label: "Outer portrait", w: 1398, h: 2034 }],
     orientations: { portrait: "duo-outer", landscape: "duo-outer-landscape" },
-    companion: "duo-inner-landscape",
+    duo: { display: "outer", companion: "duo-inner-landscape" },
     newSlideLayout: "device-bottom", rearrangeable: true, contained: false,
   },
   // A landscape phone hanging off the bottom reads as cropped, so it is contained.
@@ -89,21 +89,21 @@ export const DEVICES: Record<Device, DeviceSpec> = {
     label: "iPhone Duo outer (landscape)", platform: "ios", canvas: { w: 2034, h: 1398 },
     exportSizes: [{ label: "Outer landscape", w: 2034, h: 1398 }],
     orientations: { portrait: "duo-outer", landscape: "duo-outer-landscape" },
-    companion: "duo-inner",
+    duo: { display: "outer", companion: "duo-inner" },
     newSlideLayout: "split-landscape", rearrangeable: false, contained: true,
   },
   "duo-inner": {
     label: "iPhone Duo inner", platform: "ios", canvas: { w: 2007, h: 2853 },
     exportSizes: [{ label: "Inner portrait", w: 2007, h: 2853 }],
     orientations: { portrait: "duo-inner", landscape: "duo-inner-landscape" },
-    companion: "duo-outer-landscape",
+    duo: { display: "inner", companion: "duo-outer-landscape" },
     newSlideLayout: "device-bottom", rearrangeable: true, contained: false,
   },
   "duo-inner-landscape": {
     label: "iPhone Duo inner (landscape)", platform: "ios", canvas: { w: 2853, h: 2007 },
     exportSizes: [{ label: "Inner landscape", w: 2853, h: 2007 }],
     orientations: { portrait: "duo-inner", landscape: "duo-inner-landscape" },
-    companion: "duo-outer",
+    duo: { display: "inner", companion: "duo-outer" },
     newSlideLayout: "split-landscape", rearrangeable: false, contained: true,
   },
   // App Store Connect display type APP_APPLE_TV. Verified 18 Aug 2026 via
@@ -212,7 +212,7 @@ export function platformOf(device: Device): Platform {
 }
 
 export function isDuoDevice(device: Device): device is DuoDevice {
-  return !!DEVICES[device].companion;
+  return !!DEVICES[device].duo;
 }
 
 export function isCreative(device: Device): device is CreativeDevice {
@@ -224,7 +224,21 @@ export function creativeSpec(device: CreativeDevice) {
 }
 
 export function duoCompanion(device: DuoDevice): DuoDevice {
-  return DEVICES[device].companion!;
+  return DEVICES[device].duo!.companion;
+}
+
+export function duoDisplay(device: DuoDevice): "outer" | "inner" {
+  return DEVICES[device].duo!.display;
+}
+
+/** Apple's guidelines ask for straight-on iPhone Duo product images, so its frames ignore the scene's tilt. */
+export function staysStraight(device: Device): boolean {
+  return isDuoDevice(device);
+}
+
+/** The orientation a deck can actually be shown in: portrait-only targets are always portrait. */
+export function validOrientation(device: Device, orientation: Orientation): Orientation {
+  return supportsLandscape(device) ? orientationOf(device, orientation) : "portrait";
 }
 
 export function supportsLandscape(device: Device): boolean {

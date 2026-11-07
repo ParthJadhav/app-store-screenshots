@@ -1,9 +1,16 @@
-import { ALL_DEVICES, duoCompanion, isCreative, isDuoDevice } from "./devices";
+import { ALL_DEVICES, duoCompanion, isDuoDevice } from "./devices";
 import { captureFits, duoGeometry, frameAssetPaths } from "./frame-assets";
 import { imgSize } from "./image-cache";
-import { isFeatureGraphic, showsDevice } from "./layouts";
+import { elementRects, isFeatureGraphic, showsDevice } from "./layouts";
 import { resolveScreenshot } from "./locale";
 import type { Device, ProjectState, Slide } from "./types";
+
+// A device moved onto a "No device" screen is still drawn, and the back
+// device falls back to the front screenshot.
+function drawnDevices(state: ProjectState, slide: Slide, device: Device) {
+  const { device: front, deviceSecondary: back } = elementRects(slide, device, state.orientation);
+  return { any: !!(front || back), back: !!back };
+}
 
 /** Screenshots, icon and overlays a deck draws, in every locale. */
 function deckImages(state: ProjectState, device: Device): string[] {
@@ -13,31 +20,22 @@ function deckImages(state: ProjectState, device: Device): string[] {
       if (state.appIcon) paths.push(state.appIcon);
       continue;
     }
-    if (drawsDevice(slide)) {
-      for (const locale of state.locales) {
-        paths.push(resolveScreenshot(slide.screenshot, locale));
-        if (slide.layout === "two-devices" || slide.transforms?.deviceSecondary) {
-          paths.push(resolveScreenshot(slide.screenshotSecondary, locale));
-        }
-      }
+    const drawn = drawnDevices(state, slide, device);
+    for (const locale of state.locales) {
+      if (drawn.any) paths.push(resolveScreenshot(slide.screenshot, locale));
+      if (drawn.back) paths.push(resolveScreenshot(slide.screenshotSecondary, locale));
     }
     for (const image of slide.imageElements || []) paths.push(image.src);
   }
   return paths;
 }
 
-// A moved device stays on screen even when the layout has none.
-const drawsDevice = (slide: Slide) =>
-  slide.layout !== "no-device" || !!slide.transforms?.device || !!slide.transforms?.deviceSecondary;
-
 /** Every image a deck's export needs: its images plus the frames it draws them in. */
 export function deckAssetPaths(state: ProjectState, device: Device): string[] {
   const paths = new Set(deckImages(state, device));
   const slides = state.slidesByDevice[device] || [];
-  if (slides.some((slide) => !isFeatureGraphic(slide, device) && drawsDevice(slide))) {
-    // Creatives draw the iPhone frame too.
-    if (device === "iphone" || isCreative(device)) paths.add("/mockup.png");
-    for (const path of frameAssetPaths(device)) paths.add(path);
+  if (slides.some((slide) => drawnDevices(state, slide, device).any)) {
+    for (const path of frameAssetPaths(device, state.orientation)) paths.add(path);
   }
   paths.delete("");
   return [...paths];
@@ -74,7 +72,7 @@ export function screenshotIssues(state: ProjectState) {
       showsDevice(slide, device) && (!slide.screenshot || (duoPair(slide) && !slide.screenshotSecondary)),
     ).length,
     reusedBack: slides.filter((slide) =>
-      device !== "feature-graphic" &&
+      !isFeatureGraphic(slide, device) &&
       slide.layout === "two-devices" &&
       !duoPair(slide) &&
       !!slide.screenshot &&
