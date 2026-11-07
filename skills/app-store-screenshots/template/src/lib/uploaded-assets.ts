@@ -63,7 +63,7 @@ export function cleanImportedFont(value: unknown): ImportedFont | undefined {
   if (!value || typeof value !== "object") return undefined;
   const font = value as Partial<ImportedFont>;
   if (typeof font.src !== "string" || !IMPORTED_FONT_SRC.test(font.src)) return undefined;
-  if (!font.format || !Object.hasOwn(FONT_EXTENSION, font.format)) return undefined;
+  if (typeof font.format !== "string" || !Object.hasOwn(FONT_EXTENSION, font.format)) return undefined;
   const name = cleanFontName(font.name);
   return { src: font.src, format: font.format, ...(name ? { name } : {}) };
 }
