@@ -1,5 +1,7 @@
-import { SCREENSHOT_FONTS, THEMES } from "./constants";
-import type { Callout, Look, Scene, SceneBackdrop, SceneDecoration, ScreenshotFontId, SlideLayout } from "./types";
+import { DEFAULT_SCREENSHOT_FONT_ID, DEFAULT_THEME_ID, SCREENSHOT_FONTS, THEMES } from "./constants";
+import { isLayout } from "./layouts";
+import type { Callout, Look, Scene, SceneBackdrop, SceneDecoration, ScreenshotFontId } from "./types";
+import { isRecord as record } from "./utils";
 
 // The classic look every deck had before scenes existed. A project without a
 // `scene` renders exactly like this, so older decks don't shift.
@@ -33,24 +35,27 @@ export const DECORATIONS: { id: SceneDecoration; name: string }[] = [
   { id: "none", name: "None" },
 ];
 
-export const TILT_LIMIT = 30;
+/** Range of each numeric scene setting; values on disk are clamped and snapped to it. */
+export const SCENE_RANGES = {
+  shadow: { min: 0, max: 100, step: 1 },
+  glow: { min: 0, max: 100, step: 1 },
+  tilt: { min: -30, max: 30, step: 1 },
+  headlineWeight: { min: 300, max: 900, step: 100 },
+  headlineScale: { min: 0.5, max: 2, step: 0.05 },
+};
 export const CALLOUT_ZOOM_MIN = 1.5;
 export const CALLOUT_ZOOM_MAX = 5;
 export const DEFAULT_CALLOUT: Callout = { focusX: 0.5, focusY: 0.32, zoom: 2, shape: "circle" };
 
 const BACKDROP_IDS = new Set(BACKDROPS.map((b) => b.id));
 const DECORATION_IDS = new Set(DECORATIONS.map((d) => d.id));
-const LAYOUTS: ReadonlySet<SlideLayout> = new Set([
-  "hero", "device-bottom", "device-top", "two-devices", "no-device", "split-landscape", "feature-graphic",
-]);
-
-const record = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === "object" && !Array.isArray(value);
-
 function clampNumber(value: unknown, min: number, max: number, fallback: number) {
   if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, value));
 }
+
+const inRange = (value: unknown, key: keyof typeof SCENE_RANGES) =>
+  clampNumber(value, SCENE_RANGES[key].min, SCENE_RANGES[key].max, DEFAULT_SCENE[key]);
 
 export function sceneOf(scene: Scene | undefined): Scene {
   return scene ?? DEFAULT_SCENE;
@@ -65,11 +70,11 @@ export function cleanScene(value: unknown): Scene | undefined {
     decoration: DECORATION_IDS.has(value.decoration as SceneDecoration)
       ? (value.decoration as SceneDecoration)
       : DEFAULT_SCENE.decoration,
-    shadow: Math.round(clampNumber(value.shadow, 0, 100, DEFAULT_SCENE.shadow)),
-    glow: Math.round(clampNumber(value.glow, 0, 100, DEFAULT_SCENE.glow)),
-    tilt: Math.round(clampNumber(value.tilt, -TILT_LIMIT, TILT_LIMIT, DEFAULT_SCENE.tilt)),
-    headlineWeight: Math.round(clampNumber(value.headlineWeight, 300, 900, DEFAULT_SCENE.headlineWeight) / 100) * 100,
-    headlineScale: Math.round(clampNumber(value.headlineScale, 0.5, 2, DEFAULT_SCENE.headlineScale) * 20) / 20,
+    shadow: Math.round(inRange(value.shadow, "shadow")),
+    glow: Math.round(inRange(value.glow, "glow")),
+    tilt: Math.round(inRange(value.tilt, "tilt")),
+    headlineWeight: Math.round(inRange(value.headlineWeight, "headlineWeight") / 100) * 100,
+    headlineScale: Math.round(inRange(value.headlineScale, "headlineScale") * 20) / 20,
     headlineCase: value.headlineCase === "upper" ? "upper" : "as-typed",
     captionAlign: value.captionAlign === "left" || value.captionAlign === "center" ? value.captionAlign : "auto",
   };
@@ -90,17 +95,17 @@ export function cleanLook(value: unknown): Look | undefined {
   const scene = cleanScene(value.scene);
   if (!scene) return undefined;
   const layouts = Array.isArray(value.layouts)
-    ? value.layouts.filter((layout): layout is SlideLayout => LAYOUTS.has(layout as SlideLayout))
+    ? value.layouts.filter(isLayout)
     : [];
   return {
     id: value.id,
     name: typeof value.name === "string" && value.name.trim() ? value.name : "Saved look",
     direction: typeof value.direction === "string" ? value.direction : "",
-    themeId: typeof value.themeId === "string" && THEMES[value.themeId] ? value.themeId : "clean-light",
+    themeId: typeof value.themeId === "string" && THEMES[value.themeId] ? value.themeId : DEFAULT_THEME_ID,
     fontId:
       typeof value.fontId === "string" && Object.hasOwn(SCREENSHOT_FONTS, value.fontId)
         ? (value.fontId as ScreenshotFontId)
-        : "template-default",
+        : DEFAULT_SCREENSHOT_FONT_ID,
     scene,
     layouts: layouts.length > 0 ? layouts : ["hero"],
     inverted: Array.isArray(value.inverted) && value.inverted.length > 0

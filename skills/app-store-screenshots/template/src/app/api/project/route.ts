@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { projectValidationError } from "@/lib/project-validation";
+import { projectValidationError } from "@/lib/project-schema";
 import { rejectCrossSiteWrite } from "@/lib/request-guard";
 import { readJsonBody } from "@/lib/request-body";
 

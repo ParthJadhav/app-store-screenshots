@@ -4,8 +4,8 @@ import { Dices, Layers, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { relativeLuminance } from "@/lib/contrast";
-import { BACKDROPS, DECORATIONS, DEFAULT_SCENE, TILT_LIMIT, sameScene, sceneOf } from "@/lib/scene";
+import { isDarkColor } from "@/lib/contrast";
+import { BACKDROPS, DECORATIONS, DEFAULT_SCENE, SCENE_RANGES, sameScene, sceneOf } from "@/lib/scene";
 import { DIRECTIONS, generateLook } from "@/lib/style-lab";
 import { cn } from "@/lib/utils";
 import type { Scene, Theme } from "@/lib/types";
@@ -130,9 +130,9 @@ export function ScenePlayground({
         </Section>
 
         <Section title="Device depth">
-          <Slider label="Shadow" value={scene.shadow} min={0} max={100} unit="%" onChange={(shadow) => patch({ shadow })} />
-          <Slider label="Glow" value={scene.glow} min={0} max={100} unit="%" onChange={(glow) => patch({ glow })} />
-          <Slider label="Tilt" value={scene.tilt} min={-TILT_LIMIT} max={TILT_LIMIT} unit="°" onChange={(tilt) => patch({ tilt })} />
+          <Slider label="Shadow" value={scene.shadow} {...SCENE_RANGES.shadow} unit="%" onChange={(shadow) => patch({ shadow })} reset={DEFAULT_SCENE.shadow} />
+          <Slider label="Glow" value={scene.glow} {...SCENE_RANGES.glow} unit="%" onChange={(glow) => patch({ glow })} reset={DEFAULT_SCENE.glow} />
+          <Slider label="Tilt" value={scene.tilt} {...SCENE_RANGES.tilt} unit="°" onChange={(tilt) => patch({ tilt })} reset={DEFAULT_SCENE.tilt} />
           {straightDevices && (
             <p className="text-[11px] leading-relaxed text-muted-foreground">
               iPhone Duo frames stay straight: Apple's guidelines ask for straight-on product images.
@@ -144,21 +144,19 @@ export function ScenePlayground({
           <Slider
             label="Weight"
             value={scene.headlineWeight}
-            min={300}
-            max={900}
-            step={100}
+            {...SCENE_RANGES.headlineWeight}
             onChange={(headlineWeight) => patch({ headlineWeight })}
             reset={DEFAULT_SCENE.headlineWeight}
           />
           <Slider
             label="Size"
             value={Math.round(scene.headlineScale * 100)}
-            min={50}
-            max={200}
-            step={5}
+            min={SCENE_RANGES.headlineScale.min * 100}
+            max={SCENE_RANGES.headlineScale.max * 100}
+            step={SCENE_RANGES.headlineScale.step * 100}
             unit="%"
             onChange={(pct) => patch({ headlineScale: pct / 100 })}
-            reset={100}
+            reset={DEFAULT_SCENE.headlineScale * 100}
           />
           <div className="grid grid-cols-2 gap-2">
             <Segmented
@@ -254,7 +252,7 @@ function Swatch({ theme, scene }: { theme: Theme; scene: Scene }) {
       base={theme.bg}
       fg={theme.fg}
       accent={theme.accent}
-      dark={(relativeLuminance(theme.bg) ?? 1) < 0.18}
+      dark={isDarkColor(theme.bg)}
       inverted={false}
     />
   );
