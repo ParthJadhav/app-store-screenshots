@@ -4,6 +4,7 @@
 // the same four looks.
 import { SCREENSHOT_FONTS, THEMES, fontAvailable } from "./constants";
 import { DEVICES } from "./devices";
+import { layoutHasDevice, restylable } from "./layouts";
 import { DEFAULT_SCENE, sameScene, sceneOf } from "./scene";
 import type { Device, Look, ProjectState, Scene, ScreenshotFontId, Slide, SlideLayout } from "./types";
 
@@ -296,11 +297,11 @@ function restyleSlide(slide: Slide, index: number, look: Look, locks: Locks, rea
     next.inverted = look.inverted[index % look.inverted.length] || undefined;
     next.backgroundColor = undefined;
   }
-  if (!locks.layout && rearrange && slide.layout !== "no-device" && slide.layout !== "feature-graphic") {
+  if (!locks.layout && rearrange && layoutHasDevice(slide.layout)) {
     let layout = look.layouts[index % look.layouts.length];
     // A back device without its own screenshot would just repeat the front one.
     if (layout === "two-devices" && !slide.screenshotSecondary) layout = "hero";
-    if (layout === "no-device" || layout === "feature-graphic" || layout === "split-landscape") layout = slide.layout;
+    if (!restylable(layout)) layout = slide.layout;
     // Fresh layout = fresh default placement, so the look reads as designed.
     const { caption: _c, device: _d, deviceSecondary: _s, callout: _m, ...kept } = slide.transforms || {};
     next = { ...next, layout, transforms: Object.keys(kept).length ? kept : undefined };

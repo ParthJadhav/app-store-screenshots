@@ -3,7 +3,7 @@ import { saveAsset } from "@/lib/asset-files";
 import { rejectCrossSiteWrite } from "@/lib/request-guard";
 import type { ImportedFont } from "@/lib/types";
 import { decodeBase64, readJsonBody } from "@/lib/request-body";
-import { FONT_EXTENSION, UPLOADED_ASSETS, UPLOAD_ERRORS, maxRequestBytes } from "@/lib/uploaded-assets";
+import { FONT_EXTENSION, UPLOADED_ASSETS, UPLOAD_ERRORS } from "@/lib/uploaded-assets";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   if (blocked) {
     return NextResponse.json({ ok: false, error: blocked.error }, { status: blocked.status });
   }
-  const input = await readJsonBody(req, maxRequestBytes("font"));
+  const input = await readJsonBody(req, UPLOADED_ASSETS.font.maxRequestBytes);
   if (input.response) return input.response;
   const body = input.value as { data?: unknown } | null;
   if (typeof body?.data !== "string" || !body.data) {

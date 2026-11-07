@@ -12,20 +12,18 @@ export const UPLOADED_ASSETS = {
     types: { png: "image/png", jpg: "image/jpeg" } as Record<string, string>,
     maxBytes: 8 * MB,
     maxPixels: 64 * MB,
+    // The JSON request carries the file as base64 (4/3 of its size) plus its envelope.
+    maxRequestBytes: 12 * MB,
   },
   font: {
     dir: "fonts/imported",
     types: { woff2: "font/woff2", woff: "font/woff", ttf: "font/ttf", otf: "font/otf" } as Record<string, string>,
     maxBytes: 16 * MB,
+    maxRequestBytes: 23 * MB,
   },
 };
 
 export type AssetKind = keyof typeof UPLOADED_ASSETS;
-
-/** Largest JSON request an upload of `kind` can need: its base64 payload plus room for the envelope. */
-export function maxRequestBytes(kind: AssetKind) {
-  return Math.ceil(UPLOADED_ASSETS[kind].maxBytes / 3) * 4 + MB;
-}
 
 /** Messages shown by both the pickers and the upload routes. */
 export const UPLOAD_ERRORS = {

@@ -193,7 +193,7 @@ export function PreviewStage({
         )}
       </div>
 
-      {device === "creative-universal" && activeSlide && (
+      {isCreative(device) && creativeSpec(device).crops.length > 0 && activeSlide && (
         <PlacementPreviews
           slide={activeSlide}
           index={activeIndex}

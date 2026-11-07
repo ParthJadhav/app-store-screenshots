@@ -115,7 +115,7 @@ export function Inspector({
   onSelectElement,
 }: Props) {
   const isFeatureGraphic = isBanner(slide, device);
-  const layoutValue = device === "feature-graphic" ? "feature-graphic" : slide.layout;
+  const drawn = elementRects(slide, device, orientation);
   const layoutOptions = selectableLayouts(device).map((layout) => [layout, layoutLabel(layout, device)] as const);
   // On iPhone Duo the back device is the other display, so it needs its own capture.
   const companion = isDuoDevice(device) ? duoCompanion(device) : null;
@@ -142,14 +142,14 @@ export function Inspector({
             editing · {locale.toUpperCase()}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground">{layoutHint(layoutValue, device)}</p>
+        <p className="text-xs text-muted-foreground">{layoutHint(slide.layout, device)}</p>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Layout</Label>
           <Select
-            value={layoutValue}
+            value={slide.layout}
             onValueChange={(layout) => {
               const next = layout as SlideLayout;
               onChange({
@@ -218,10 +218,10 @@ export function Inspector({
 
         <TypographySection slide={slide} isFeatureGraphic={isFeatureGraphic} onChange={onChange} />
 
-        {showsDevice(slide, device) && (
+        {(drawn.device || drawn.deviceSecondary) && (
           <div className="space-y-1.5">
             <Label className="text-xs">
-              {slide.layout === "two-devices" ? "Front device screenshot" : "Screenshot"}
+              {drawn.deviceSecondary ? "Front device screenshot" : "Screenshot"}
             </Label>
             <ScreenshotPicker
               label="Primary"
@@ -233,7 +233,7 @@ export function Inspector({
           </div>
         )}
 
-        {slide.layout === "two-devices" && (
+        {drawn.deviceSecondary && (
           <div className="space-y-1.5">
             <Label className="text-xs">
               {companion ? `${DEVICES[companion].label} screenshot` : "Back device screenshot"}

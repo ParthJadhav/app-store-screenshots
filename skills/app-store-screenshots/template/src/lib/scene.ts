@@ -54,8 +54,12 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
   return Math.min(max, Math.max(min, value));
 }
 
-const inRange = (value: unknown, key: keyof typeof SCENE_RANGES) =>
-  clampNumber(value, SCENE_RANGES[key].min, SCENE_RANGES[key].max, DEFAULT_SCENE[key]);
+/** `value` clamped to its range and snapped to the range's step (as 1/step, so 0.05 steps stay exact). */
+function inRange(value: unknown, key: keyof typeof SCENE_RANGES) {
+  const { min, max, step } = SCENE_RANGES[key];
+  const perUnit = 1 / step;
+  return Math.round(clampNumber(value, min, max, DEFAULT_SCENE[key]) * perUnit) / perUnit;
+}
 
 export function sceneOf(scene: Scene | undefined): Scene {
   return scene ?? DEFAULT_SCENE;
@@ -70,11 +74,11 @@ export function cleanScene(value: unknown): Scene | undefined {
     decoration: DECORATION_IDS.has(value.decoration as SceneDecoration)
       ? (value.decoration as SceneDecoration)
       : DEFAULT_SCENE.decoration,
-    shadow: Math.round(inRange(value.shadow, "shadow")),
-    glow: Math.round(inRange(value.glow, "glow")),
-    tilt: Math.round(inRange(value.tilt, "tilt")),
-    headlineWeight: Math.round(inRange(value.headlineWeight, "headlineWeight") / 100) * 100,
-    headlineScale: Math.round(inRange(value.headlineScale, "headlineScale") * 20) / 20,
+    shadow: inRange(value.shadow, "shadow"),
+    glow: inRange(value.glow, "glow"),
+    tilt: inRange(value.tilt, "tilt"),
+    headlineWeight: inRange(value.headlineWeight, "headlineWeight"),
+    headlineScale: inRange(value.headlineScale, "headlineScale"),
     headlineCase: value.headlineCase === "upper" ? "upper" : "as-typed",
     captionAlign: value.captionAlign === "left" || value.captionAlign === "center" ? value.captionAlign : "auto",
   };

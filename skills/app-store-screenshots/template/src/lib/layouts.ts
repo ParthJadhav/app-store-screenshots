@@ -6,17 +6,29 @@ import type { BuiltInElementId, Device, ElementId, ElementTransform, Orientation
 // Layouts the editor renders, with their name and a short description. Vary
 // them across a deck for visual rhythm. Elements are drawn in slide-canvas.tsx;
 // their default placements are below.
-const LAYOUTS: Record<SlideLayout, { label: string; hint: string }> = {
-  hero: { label: "Hero", hint: "Headline above, device at bottom" },
-  "device-bottom": { label: "Device bottom", hint: "Headline top, device anchored below" },
-  "device-top": { label: "Device top", hint: "Flipped — device on top" },
-  "two-devices": { label: "Two devices", hint: "Layered back + front phones" },
-  "no-device": { label: "No device", hint: "Big standalone headline" },
-  "split-landscape": { label: "Split (landscape)", hint: "Caption left, device right" },
-  "feature-graphic": { label: "Feature graphic", hint: "1024×500 Play Store banner" },
+// `device`: the layout places a device. `restyle`: Style Lab may give it to a
+// screen of a portrait deck.
+const LAYOUTS: Record<SlideLayout, { label: string; hint: string; device: boolean; restyle: boolean }> = {
+  hero: { label: "Hero", hint: "Headline above, device at bottom", device: true, restyle: true },
+  "device-bottom": { label: "Device bottom", hint: "Headline top, device anchored below", device: true, restyle: true },
+  "device-top": { label: "Device top", hint: "Flipped — device on top", device: true, restyle: true },
+  "two-devices": { label: "Two devices", hint: "Layered back + front phones", device: true, restyle: true },
+  "no-device": { label: "No device", hint: "Big standalone headline", device: false, restyle: false },
+  "split-landscape": { label: "Split (landscape)", hint: "Caption left, device right", device: true, restyle: false },
+  "feature-graphic": { label: "Feature graphic", hint: "1024×500 Play Store banner", device: false, restyle: false },
 };
 
 const ALL_LAYOUTS = Object.keys(LAYOUTS) as SlideLayout[];
+
+/** Whether the layout places a device. */
+export function layoutHasDevice(layout: SlideLayout): boolean {
+  return LAYOUTS[layout].device;
+}
+
+/** Whether Style Lab may give `layout` to a screen of a portrait deck. */
+export function restylable(layout: SlideLayout): boolean {
+  return LAYOUTS[layout].restyle;
+}
 
 export function isLayout(value: unknown): value is SlideLayout {
   return typeof value === "string" && Object.hasOwn(LAYOUTS, value);
@@ -322,7 +334,7 @@ export function isFeatureGraphic(slide: Slide, device: Device) {
 
 /** Whether the screen draws a device by default, so it needs a screenshot and can take a magnifier. */
 export function showsDevice(slide: Slide, device: Device) {
-  return !isFeatureGraphic(slide, device) && slide.layout !== "no-device";
+  return !isFeatureGraphic(slide, device) && layoutHasDevice(slide.layout);
 }
 
 /**

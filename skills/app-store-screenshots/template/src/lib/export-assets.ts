@@ -1,7 +1,7 @@
 import { ALL_DEVICES, duoCompanion, isDuoDevice } from "./devices";
 import { captureFits, duoGeometry, frameAssetPaths } from "./frame-assets";
 import { imgSize } from "./image-cache";
-import { elementRects, isFeatureGraphic, showsDevice } from "./layouts";
+import { elementRects, isFeatureGraphic } from "./layouts";
 import { resolveScreenshot } from "./locale";
 import type { Device, ProjectState, Slide } from "./types";
 
@@ -67,22 +67,18 @@ export function screenshotIssues(state: ProjectState) {
     locales.every((locale) =>
       captureFits(imgSize(resolveScreenshot(raw, locale)), duoGeometry(display).screenAspect, display),
     );
+  const drawn = slides.map((slide) => ({ slide, ...drawnDevices(state, slide, device) }));
   return {
-    missing: slides.filter((slide) =>
-      showsDevice(slide, device) && (!slide.screenshot || (duoPair(slide) && !slide.screenshotSecondary)),
+    missing: drawn.filter(({ slide, any }) =>
+      any && (!slide.screenshot || (duoPair(slide) && !slide.screenshotSecondary)),
     ).length,
-    reusedBack: slides.filter((slide) =>
-      !isFeatureGraphic(slide, device) &&
-      slide.layout === "two-devices" &&
-      !duoPair(slide) &&
-      !!slide.screenshot &&
-      !slide.screenshotSecondary,
+    reusedBack: drawn.filter(({ slide, back }) =>
+      back && !duoPair(slide) && !!slide.screenshot && !slide.screenshotSecondary,
     ).length,
     mismatched: isDuoDevice(device)
-      ? slides.filter((slide) =>
-          showsDevice(slide, device) &&
-          (!fitsDisplay(slide.screenshot, device) ||
-            (slide.layout === "two-devices" && !fitsDisplay(slide.screenshotSecondary, duoCompanion(device)))),
+      ? drawn.filter(({ slide, any, back }) =>
+          any &&
+          (!fitsDisplay(slide.screenshot, device) || (back && !fitsDisplay(slide.screenshotSecondary, duoCompanion(device)))),
         ).length
       : 0,
   };

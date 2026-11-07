@@ -3,7 +3,7 @@ import sharp from "sharp";
 import { saveAsset } from "@/lib/asset-files";
 import { rejectCrossSiteWrite, sniffImageType } from "@/lib/request-guard";
 import { decodeBase64, readJsonBody } from "@/lib/request-body";
-import { UPLOADED_ASSETS, UPLOAD_ERRORS, maxRequestBytes } from "@/lib/uploaded-assets";
+import { UPLOADED_ASSETS, UPLOAD_ERRORS } from "@/lib/uploaded-assets";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   if (blocked) {
     return NextResponse.json({ ok: false, error: blocked.error }, { status: blocked.status });
   }
-  const input = await readJsonBody(req, maxRequestBytes("image"));
+  const input = await readJsonBody(req, UPLOADED_ASSETS.image.maxRequestBytes);
   if (input.response) return input.response;
   const body = input.value as { dataUrl?: string } | null;
   if (!body?.dataUrl || typeof body.dataUrl !== "string") {

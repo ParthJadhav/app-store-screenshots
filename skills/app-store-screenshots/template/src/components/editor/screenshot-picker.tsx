@@ -162,7 +162,7 @@ export function ScreenshotPicker({ label, value, locale, onChange }: Props) {
         <input
           ref={inputRef}
           type="file"
-          accept="image/png,image/jpeg"
+          accept={Object.values(types).join(",")}
           className="hidden"
           onChange={async (e) => {
             const input = e.currentTarget;

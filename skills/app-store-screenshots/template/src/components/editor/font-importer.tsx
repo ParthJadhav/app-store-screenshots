@@ -66,7 +66,7 @@ export const FontImporter = React.forwardRef<FontImporterHandle, Props>(function
     <input
       ref={inputRef}
       type="file"
-      accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff,font/ttf,font/otf"
+      accept={Object.entries(UPLOADED_ASSETS.font.types).flatMap(([ext, mime]) => [`.${ext}`, mime]).join(",")}
       className="sr-only"
       tabIndex={-1}
       aria-hidden
