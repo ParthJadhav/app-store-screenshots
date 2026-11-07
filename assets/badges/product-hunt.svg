@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="180" viewBox="0 0 640 180" role="img" aria-labelledby="title desc">
+  <title id="title">Product Hunt #8 Day Rank</title>
+  <desc id="desc">App Store Screenshots ranked number 8 on Product Hunt on October 28, 2026.</desc>
+  <rect width="640" height="180" rx="28" fill="#fff8f5"/>
+  <rect x="1" y="1" width="638" height="178" rx="27" fill="none" stroke="#f4c7ba" stroke-width="2"/>
+  <circle cx="88" cy="90" r="46" fill="#ff6154"/>
+  <path d="M72 125V55h27c18 0 29 10 29 26 0 17-12 27-30 27H86v17H72Zm14-30h11c11 0 17-5 17-14s-6-13-17-13H86v27Z" fill="#fff"/>
+  <text x="158" y="74" fill="#a44339" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" letter-spacing="2">PRODUCT HUNT</text>
+  <text x="158" y="122" fill="#241614" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700">#8 Day Rank</text>
+  <text x="482" y="122" fill="#8b625c" font-family="Arial, Helvetica, sans-serif" font-size="17">Oct 28, 2026</text>
+</svg>

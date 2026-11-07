@@ -3,9 +3,10 @@
 A skill for AI coding agents that scaffolds a production-ready Next.js editor for App Store and Google Play marketing screenshots. It gives you a connected canvas, real device frames, inspector controls, persistent project state, and one-click export bundles at store-ready sizes.
 
 <p align="center">
-  <a href="https://www.skills.sh/parthjadhav/app-store-screenshots/app-store-screenshots"><img src="assets/badges/skills-installs.svg" alt="14.1K installs on skills.sh" width="32%" /></a>
-  <a href="https://trendshift.io/repositories/22880#achievements"><img src="assets/badges/github-trending.svg" alt="GitHub Trending #12 in TypeScript on June 16, 2026" width="32%" /></a>
-  <a href="https://trendshift.io/repositories/22880#achievements"><img src="assets/badges/trendshift-daily.svg" alt="Trendshift #10 Repository of the Day across all languages on March 10, 2026" width="32%" /></a>
+  <a href="https://www.skills.sh/parthjadhav/app-store-screenshots/app-store-screenshots"><img src="assets/badges/skills-installs.svg" alt="14.1K installs on skills.sh" width="24%" /></a>
+  <a href="https://trendshift.io/repositories/22880#achievements"><img src="assets/badges/github-trending.svg" alt="GitHub Trending #12 in TypeScript on June 16, 2026" width="24%" /></a>
+  <a href="https://trendshift.io/repositories/22880#achievements"><img src="assets/badges/trendshift-daily.svg" alt="Trendshift #10 Repository of the Day across all languages on March 10, 2026" width="24%" /></a>
+  <a href="https://www.producthunt.com/products/app-store-screenshots"><img src="assets/badges/product-hunt.svg" alt="Product Hunt #8 Day Rank on October 28, 2026" width="24%" /></a>
 </p>
 
 ![Current connected-canvas editor showing a Bloom screenshot deck](example.png)
